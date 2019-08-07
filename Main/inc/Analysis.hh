@@ -5,6 +5,7 @@
 #include "RooDataHist.h"
 #include "RooPlot.h"
 #include "RooAddPdf.h"
+#include "RooFFTConvPdf.h"
 #include "RooRealVar.h"
 
 #include "ConfigTools/inc/SimpleConfig.hh"
@@ -67,6 +68,24 @@ namespace TrkAnaAnalysis {
 	    factory_cmd << pdf;
 	    ws->factory(factory_cmd.str().c_str());
 	    pdfs.push_back(i_comp);
+	  }
+	}
+
+	// Construct te resolution PDFs and the smeared PDFs
+	for (const auto& i_obs : all_obs) {
+	  std::string res_pdf = config.getString("res."+i_obs+".pdf");
+	  factory_cmd.str("");
+	  factory_cmd << res_pdf;
+	  ws->factory(factory_cmd.str().c_str());
+	  resolutionPdf = "res";
+
+	  for (const auto& i_comp : all_comps) {
+	    std::string pdfName = i_comp + "res";
+	    factory_cmd.str("");
+	    factory_cmd << "FCONV::" << pdfName << "(" << i_obs << ", " << i_comp << ", " << resolutionPdf << ")";
+	    ws->factory(factory_cmd.str().c_str());
+
+	    ((RooFFTConvPdf*) ws->pdf(pdfName.c_str()))->setBufferFraction(2.0);
 	  }
 	}
 
@@ -138,24 +157,26 @@ namespace TrkAnaAnalysis {
     RooPlot* plot(std::string obs_x) {
 
       RooRealVar* var = ws->var(obs_x.c_str());
-      RooPlot* result = 0;
-      result = var->frame();
+      RooPlot* result = var->frame();
 
       ws->data("data")->plotOn(result);
-      ws->pdf(modelPdf.c_str())->plotOn(result);
+
+      RooAbsPdf* plotPdf = ws->pdf(modelPdf.c_str());
+      if (!plotPdf) {
+	throw cet::exception("TrkAnalysis::Analsysi::plot") << "Problem getting pdf " << modelPdf;
+      }
+      plotPdf->plotOn(result);
       
       return result;
     }
 
     void Write() {
       hist->Write();
-      /*
-      plot("mom")->Write();
 
       TCanvas* c = new TCanvas("c", "c");
       plot("mom")->Draw();
       c->Write();
-      */
+
       ws->Print();
       ws->Write();
     }
@@ -170,6 +191,7 @@ namespace TrkAnaAnalysis {
     ObsNames obs;
     LeafNames leaves;
     PdfNames pdfs;
+    PdfName resolutionPdf;
     PdfName modelPdf;
   };
 }
