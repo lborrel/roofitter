@@ -3,15 +3,16 @@
 
 #include "ConfigTools/inc/SimpleConfig.hh"
 
+#include "Main/inc/VarMom.hh"
+
 namespace TrkAnaAnalysis {
 
   struct InputParameters {
-    void Import(const mu2e::SimpleConfig& config) {
-      input_filename = config.getString("input.filename");
-      input_treename = config.getString("input.treename");
+    InputParameters(const mu2e::SimpleConfig& config) : 
+      mom(config) {
     }
-    std::string input_filename;
-    std::string input_treename;
+
+    VarMom mom;
   };
 }
 

@@ -20,7 +20,7 @@ namespace TrkAnaAnalysis {
     std::cout << "\t-h, --help: print this help message" << std::endl;
   }
 
-  void ProcessArgs(int argc, char** argv, InputParameters& params) {
+  void ProcessArgs(int argc, char** argv, std::string& config_filename) {
     const char* const short_opts = "c:h";
 
     const option long_opts[] = {
@@ -38,7 +38,7 @@ namespace TrkAnaAnalysis {
       switch (opt) {
     
       case 'c':
-	params.Import(mu2e::SimpleConfig(std::string(optarg)));
+	config_filename = std::string(optarg);
 	break;
 
       case 'h': // -h or --help
@@ -48,35 +48,40 @@ namespace TrkAnaAnalysis {
 	break;
       }
     }
-
-    if (params.input_filename.empty()) {
-      throw cet::exception("TrkAnaAnalysis::ProcessArgs") << "Input filename not specified!";
-    }
-    if (params.input_treename.empty()) {
-      throw cet::exception("TrkAnaAnalysis::ProcessArgs") << "Input treename not specified!";
-    }
   }
 
   int main(int argc, char **argv) {
 
-    InputParameters params;
-    ProcessArgs(argc, argv, params);
+    std::string config_filename;
+    ProcessArgs(argc, argv, config_filename);
+    mu2e::SimpleConfig config(config_filename);
 
-    TFile* file = new TFile(params.input_filename.c_str(), "READ");
- 
-    TTree* trkanaNeg = (TTree*) file->Get(params.input_treename.c_str());
-  
+    std::string filename = config.getString("input.filename");
+    if (filename.empty()) {
+      throw cet::exception("TrkAnaAnalysis::main") << "Input filename not specified!";
+    }
+    TFile* file = new TFile(filename.c_str(), "READ");
+    if (file->IsZombie()) {
+      throw cet::exception("TrkAnaAnalysis::main") << "Input file " << filename << " is a zombie";
+    }
+
+    std::string treename = config.getString("input.treename");
+    if (treename.empty()) {
+      throw cet::exception("TrkAnaAnalysis::main") << "Input treename not specified!";
+    } 
+    TTree* trkanaNeg = (TTree*) file->Get(treename.c_str());
+    if (!trkanaNeg) {
+      throw cet::exception("TrkAnaANalysis::main") << "Input tree " << treename << " is not in file";
+    }
+
+    InputParameters params(config);
+
     double min_t0 = 400;
     double max_t0 = 1800;
     double t0_width = 100;
     int n_t0_bins = (max_t0 - min_t0) / t0_width;
   
-    double min_mom = 95;
-    double max_mom = 115;
-    double mom_width = 0.1;
-    int n_mom_bins = (max_mom - min_mom) / mom_width;
-  
-    TH2F* hMomT0 = new TH2F("hMomT0", "", n_t0_bins,min_t0,max_t0, n_mom_bins,min_mom,max_mom);
+    TH2F* hMomT0 = new TH2F("hMomT0", "", n_t0_bins,min_t0,max_t0, params.mom.n_bins(),params.mom.min,params.mom.max);
     std::string drawcmd = "deent.mom:de.t0>>hMomT0";
     TCut goodfit = "de.status>0";
     TCut triggered = "(trigbits&0x208)>0";
@@ -92,8 +97,6 @@ namespace TrkAnaAnalysis {
     trkanaNeg->Draw(drawcmd.c_str(), cutcmd, "goff");
 
     std::cout << "hMomT0 Entries = " << hMomT0->GetEntries() << std::endl;
-
-    hMomT0->Draw("COLZ");
 
     std::cout << "Done" << std::endl;
   
