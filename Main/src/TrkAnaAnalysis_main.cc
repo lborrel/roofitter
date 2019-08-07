@@ -68,17 +68,18 @@ namespace TrkAnaAnalysis {
       throw cet::exception("TrkAnaANalysis::main") << "Input tree " << treename << " is not in file";
     }
 
-    Analysis ana(config);
+    Analysis ana("ana", config);
 
     trkana->Draw(ana.drawcmd().c_str(), ana.cutcmd(), "goff");
 
-    std::cout << "hMomT0 Entries = " << ana.hMomT0.GetEntries() << std::endl;
+    std::cout << "hMomT0 Entries = " << ana.hMomT0->GetEntries() << std::endl;
 
     std::cout << "Done" << std::endl;
 
     std::string outfilename = config.getString("output.filename");
     TFile* outfile = new TFile(outfilename.c_str(), "RECREATE");
-    ana.hMomT0.Write();
+    ana.hMomT0->Write();
+    ana.data->Write();
     outfile->Write();
     outfile->Close();
 
