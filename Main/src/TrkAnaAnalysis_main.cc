@@ -10,7 +10,7 @@
 #include "TH2.h"
 #include "TCut.h"
 
-#include "Main/inc/InputParameters.hh"
+#include "Main/inc/Analysis.hh"
 
 namespace TrkAnaAnalysis {
 
@@ -63,35 +63,22 @@ namespace TrkAnaAnalysis {
     }
 
     std::string treename = config.getString("input.treename");
-    TTree* trkanaNeg = (TTree*) file->Get(treename.c_str());
-    if (!trkanaNeg) {
+    TTree* trkana = (TTree*) file->Get(treename.c_str());
+    if (!trkana) {
       throw cet::exception("TrkAnaANalysis::main") << "Input tree " << treename << " is not in file";
     }
 
-    InputParameters params(config);
+    Analysis ana(config);
 
-    TH2F* hMomT0 = new TH2F("hMomT0", "", params.t0.n_bins(),params.t0.min,params.t0.max, params.mom.n_bins(),params.mom.min,params.mom.max);
-    std::string drawcmd = "deent.mom:de.t0>>hMomT0";
-    TCut goodfit = "de.status>0";
-    TCut triggered = "(trigbits&0x208)>0";
-    TCut inTimeWindow = "de.t0>700 && de.t0<1695";
-    TCut inTanDipCut = "deent.td>0.577350 && deent.td<1.000";
-    TCut inD0Cut = "deent.d0>-80 && deent.d0<105";
-    TCut inMaxRCut = "deent.d0+2./deent.om>450 && deent.d0+2./deent.om<680";
-    TCut noCRVHit = "(bestcrv<0||(de.t0-crvinfo._timeWindowStart[bestcrv]<-50||de.t0-crvinfo._timeWindowStart[bestcrv]>150.0))";
-    TCut passTrkQual = "dequal.TrkQual>0.8";
-    TCut recomom = "deent.mom>95";
-  
-    TCut cutcmd = goodfit + triggered + inTimeWindow + inTanDipCut + inD0Cut + inMaxRCut + noCRVHit + passTrkQual + recomom;
-    trkanaNeg->Draw(drawcmd.c_str(), cutcmd, "goff");
+    trkana->Draw(ana.drawcmd().c_str(), ana.cutcmd(), "goff");
 
-    std::cout << "hMomT0 Entries = " << hMomT0->GetEntries() << std::endl;
+    std::cout << "hMomT0 Entries = " << ana.hMomT0.GetEntries() << std::endl;
 
     std::cout << "Done" << std::endl;
 
     std::string outfilename = config.getString("output.filename");
     TFile* outfile = new TFile(outfilename.c_str(), "RECREATE");
-    hMomT0->Write();
+    ana.hMomT0.Write();
     outfile->Write();
     outfile->Close();
 

@@ -9,6 +9,7 @@ namespace TrkAnaAnalysis {
 
   struct Observable {
     Observable(const mu2e::SimpleConfig& config, std::string name) :
+      leaf(config.getString(name+".leaf")),
       min(config.getDouble(name+".hist.min")),
       max(config.getDouble(name+".hist.max")),
       bin_width(config.getDouble(name+".hist.bin_width")),
@@ -17,6 +18,8 @@ namespace TrkAnaAnalysis {
     }
 
     int n_bins() { return (max - min)/bin_width; }
+
+    std::string leaf;
     double min;
     double max;
     double bin_width;
