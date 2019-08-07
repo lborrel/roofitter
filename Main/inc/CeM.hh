@@ -7,26 +7,33 @@
 #include "RooAbsPdf.h"
 #include "RooGaussian.h"
 
+#include "Main/inc/Component.hh"
+
 namespace TrkAnaAnalysis {
 
-  struct CeM {
-    CeM(const mu2e::SimpleConfig& config, std::string name, Observable& obs) :
-      model(config.getString(name+".model")),
-      eMax("eMax", "eMax", 104.97),
-      signal_sigma("signal_sigma", "signal_sigma", 0.01)
+  class CeM : public Component {
+  public:
+
+    CeM(const mu2e::SimpleConfig& config, std::string name, std::vector<Observable>& obs) :
+      Component(config, name)
     {
-      if (model == "LeadingOrder") {
-	pdf = new RooGaussian("cem", "cem", obs.roo_var, eMax, signal_sigma);
-      }
-      else {
-	throw cet::exception("TrkAnaAnalysis::CeM") << "Unsupported model (" << model << ")";
+      eMax = new RooRealVar("eMax", "eMax", 104.97);
+      signal_sigma = new RooRealVar("signal_sigma", "signal_sigma", 0.01);
+      for (auto& i_obs : obs) {
+	std::string model = config.getString(name+"."+i_obs.name+".model");
+	if (i_obs.name == "mom") {
+	  if (model == "LeadingOrder") {
+	    pdf = new RooGaussian("cem", "cem", i_obs.roo_var, *eMax, *signal_sigma);
+	  }
+	  else {
+	    throw cet::exception("TrkAnaAnalysis::CeM") << "Unsupported mom model (" << model << ")";
+	  }
+	}
       }
     }
 
-    std::string model;
-    RooAbsPdf* pdf;
-    RooRealVar eMax;
-    RooRealVar signal_sigma;
+    RooRealVar* eMax;
+    RooRealVar* signal_sigma;
   };
 }
 

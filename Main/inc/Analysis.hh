@@ -3,10 +3,12 @@
 
 #include "RooDataHist.h"
 #include "RooPlot.h"
+#include "RooAddPdf.h"
 
 #include "ConfigTools/inc/SimpleConfig.hh"
 
 #include "Main/inc/Observable.hh"
+#include "Main/inc/Component.hh"
 #include "Main/inc/CeM.hh"
 
 namespace TrkAnaAnalysis {
@@ -36,6 +38,17 @@ namespace TrkAnaAnalysis {
 	cuts.push_back(TCut(config.getString("cut."+i_cut).c_str()));
       }
 
+      std::vector<std::string> all_comps;
+      config.getVectorString(name+".components", all_comps);
+      for (const auto& i_comp : all_comps) {
+	std::string type = config.getString(i_comp+".type");
+	if (type == "cem") {
+	  comps.push_back(CeM(config, i_comp, obs));
+	}
+	else {
+	  throw cet::exception("TrkAnalysis::Analysis") << "Component " << i_comp << " is unsupported";
+	}
+      }
       //      cem = new CeM(config, "cem", obs.at(1));
     }
 
@@ -71,8 +84,20 @@ namespace TrkAnaAnalysis {
       }
     }
 
+    void constructModelPdf() {
+//      RooArgList pdfs, norms;
+//      for (auto& i_comp : comps) {
+//	pdfs.add(*i_comp.pdf);
+//	norms.add(RooRealVar("N", "N", 0, 200));
+//      }
+//      modelPdf = new RooAddPdf("model", "model", pdfs, norms);
+modelPdf = comps.begin()->pdf;
+    }
+
     void fit() {
-      //      cem->pdf->fitTo(*data);
+std::cout << "AE: modeukPdf = " << modelPdf << std::endl;
+std::cout <<" AE: data = " << data << std::endl;
+      modelPdf->fitTo(*data);
     }
 
     RooPlot* plot() {
@@ -107,7 +132,8 @@ namespace TrkAnaAnalysis {
     TH1* hist;
     RooDataHist* data;
 
-    CeM* cem;
+    std::vector<Component> comps;
+    RooAbsPdf* modelPdf;
   };
 }
 

@@ -78,9 +78,8 @@ namespace TrkAnaAnalysis {
 
     for (auto& i_ana : analyses) {
       i_ana.fillData(trkana);
-
       std::cout << "hist Entries = " << i_ana.hist->GetEntries() << std::endl;
-
+      i_ana.constructModelPdf();
       i_ana.fit();
     }
 
