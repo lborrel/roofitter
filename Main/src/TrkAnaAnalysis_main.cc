@@ -82,7 +82,6 @@ namespace TrkAnaAnalysis {
 	std::cout << "hist Entries = " << i_ana.hist->GetEntries() << std::endl;
 
 	if (config.getBool(i_ana.name+".fit", false)) {
-	  i_ana.constructModelPdf();
 	  i_ana.fit();
 	}
       }

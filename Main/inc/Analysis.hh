@@ -32,6 +32,7 @@ namespace TrkAnaAnalysis {
 	throw cet::exception("TrkAnaAnalysis::Analysis") << "More than 2 observables is not currently supported";
       }
 
+      // Construct all the observables
       for (const auto& i_obs : all_obs) {
 	factory_cmd.str("");
 	double min = config.getDouble(i_obs+".hist.min");
@@ -48,6 +49,7 @@ namespace TrkAnaAnalysis {
 	leaves.insert(std::pair<ObsName, LeafName>(i_obs, leaf));
       }
       
+      // Construct all the cuts
       std::vector<std::string> all_cuts;
       config.getVectorString(name+".cuts", all_cuts);
       for (const auto& i_cut : all_cuts) {
@@ -55,6 +57,7 @@ namespace TrkAnaAnalysis {
       }
 
       if (config.getBool(name+".fit", false)) {
+	// Construct the component PDFs
 	std::vector<std::string> all_comps;
 	config.getVectorString(name+".components", all_comps);
 	for (const auto& i_comp : all_comps) {
@@ -66,6 +69,13 @@ namespace TrkAnaAnalysis {
 	    pdfs.push_back(i_comp);
 	  }
 	}
+
+	// Construct the modelPdf
+	std::string pdf = config.getString(name+".model");
+	factory_cmd.str("");
+	factory_cmd << pdf;
+	ws->factory(factory_cmd.str().c_str());
+	modelPdf = "model";
       }
     }
 
@@ -119,22 +129,10 @@ namespace TrkAnaAnalysis {
       ws->import(*(new RooDataHist("data", "data", vars, RooFit::Import(*hist))));
     }
 
-    void constructModelPdf() {
-//      RooArgList pdfs, norms;
-//      for (auto& i_comp : comps) {
-//	pdfs.add(*i_comp.pdf);
-//	norms.add(RooRealVar("N", "N", 0, 200));
-//      }
-//      modelPdf = new RooAddPdf("model", "model", pdfs, norms);
-      if (pdfs.empty()) {
-	throw cet::exception("TrkAnaAnalysis::Analysis") << "No PDFs defined for this analysis" << std::endl;
-      }
-      //      modelPdf = ws->pdf(pdfs.begin()->c_str());
-    }
 
     void fit() {
       RooAbsData* data = ws->data("data");
-      ws->pdf(pdfs.begin()->c_str())->fitTo(*data);
+      ws->pdf(modelPdf.c_str())->fitTo(*data);
     }
 
     RooPlot* plot(std::string obs_x) {
@@ -144,14 +142,13 @@ namespace TrkAnaAnalysis {
       result = var->frame();
 
       ws->data("data")->plotOn(result);
-      ws->pdf(pdfs.begin()->c_str())->plotOn(result);
+      ws->pdf(modelPdf.c_str())->plotOn(result);
       
       return result;
     }
 
     void Write() {
       hist->Write();
-      //      data->Write();
       /*
       plot("mom")->Write();
 
@@ -173,6 +170,7 @@ namespace TrkAnaAnalysis {
     ObsNames obs;
     LeafNames leaves;
     PdfNames pdfs;
+    PdfName modelPdf;
   };
 }
 
