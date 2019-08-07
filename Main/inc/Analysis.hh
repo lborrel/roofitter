@@ -10,7 +10,7 @@
 
 #include "ConfigTools/inc/SimpleConfig.hh"
 
-namespace TrkAnaAnalysis {
+namespace trkana {
 
   typedef std::string ObsName;
   typedef std::string LeafName;
@@ -32,7 +32,7 @@ namespace TrkAnaAnalysis {
       std::vector<std::string> all_obs;
       config.getVectorString(name+".observables", all_obs);
       if (all_obs.size()>2) {
-	throw cet::exception("TrkAnaAnalysis::Analysis") << "More than 2 observables is not currently supported";
+	throw cet::exception("trkana::Analysis") << "More than 2 observables is not currently supported";
       }
 
       // Construct all the observables
@@ -100,7 +100,6 @@ namespace TrkAnaAnalysis {
 
 	// Construct all the calculations
 	config.getVectorString(name+".calculations", calcs);
-	std::cout <<" AE: " << calcs.size() << std::endl;
       }
     }
 
@@ -144,7 +143,7 @@ namespace TrkAnaAnalysis {
 	draw = y_leaf+":"+x_leaf;
       }
       else {
-	throw cet::exception("TrkAnaAnalysis::Analysis") << "Can't create histogram with more than two axes";
+	throw cet::exception("trkana::Analysis") << "Can't create histogram with more than two axes";
       }
       draw += ">>";
       draw += hist->GetName();
@@ -163,7 +162,6 @@ namespace TrkAnaAnalysis {
     void calculate() {
       std::stringstream factory_cmd;
       for (const auto& i_calc : calcs) {
-	std::cout << i_calc << std::endl;
 	factory_cmd.str("");
 	factory_cmd << i_calc;
 	ws->factory(factory_cmd.str().c_str());

@@ -13,7 +13,7 @@
 
 #include "Main/inc/Analysis.hh"
 
-namespace TrkAnaAnalysis {
+namespace trkana {
 
   void PrintHelp() {
     std::cout << "Input Arguments:" << std::endl;
@@ -60,13 +60,13 @@ namespace TrkAnaAnalysis {
     std::string filename = config.getString("input.filename");
     TFile* file = new TFile(filename.c_str(), "READ");
     if (file->IsZombie()) {
-      throw cet::exception("TrkAnaAnalysis::main") << "Input file " << filename << " is a zombie";
+      throw cet::exception("trkana::main") << "Input file " << filename << " is a zombie";
     }
 
     std::string treename = config.getString("input.treename");
     TTree* trkana = (TTree*) file->Get(treename.c_str());
     if (!trkana) {
-      throw cet::exception("TrkAnaAnalysis::main") << "Input tree " << treename << " is not in file";
+      throw cet::exception("trkana::main") << "Input tree " << treename << " is not in file";
     }
 
     std::vector<Analysis> analyses;
@@ -106,6 +106,6 @@ namespace TrkAnaAnalysis {
 
 int main(int argc, char **argv) {
 
-  TrkAnaAnalysis::main(argc, argv);
+  trkana::main(argc, argv);
   return 0;
 }
