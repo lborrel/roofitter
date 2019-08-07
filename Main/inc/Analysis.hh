@@ -15,6 +15,7 @@ namespace TrkAnaAnalysis {
   typedef std::string LeafName;
   typedef std::string PdfName;
 
+  typedef std::vector<ObsName> ObsNames;
   typedef std::map<ObsName, LeafName> LeafNames;
   typedef std::vector<PdfName> PdfNames;
 
@@ -41,8 +42,9 @@ namespace TrkAnaAnalysis {
 	ws.var(i_obs.c_str())->setBins( (max-min)/bin_width );
 
 	std::string leaf = config.getString(i_obs+".leaf");
+	
+	obs.push_back(i_obs);
 	leaves.insert(std::pair<ObsName, LeafName>(i_obs, leaf));
-	//	ws.Print();
       }
       
       std::vector<std::string> all_cuts;
@@ -51,37 +53,22 @@ namespace TrkAnaAnalysis {
 	cuts.push_back(TCut(config.getString("cut."+i_cut).c_str()));
       }
 
-      
-      std::vector<std::string> all_comps;
-      config.getVectorString(name+".components", all_comps);
-      for (const auto& i_comp : all_comps) {
-	for (const auto& i_obs : all_obs) {
-	std::string pdf = config.getString(i_comp+"."+i_obs+".pdf");
-	factory_cmd.str("");
-	factory_cmd << pdf;
-	ws.factory(factory_cmd.str().c_str());
-	pdfs.push_back(i_comp);
+      if (config.getBool(name+".fit", false)) {
+	std::vector<std::string> all_comps;
+	config.getVectorString(name+".components", all_comps);
+	for (const auto& i_comp : all_comps) {
+	  for (const auto& i_obs : all_obs) {
+	    std::string pdf = config.getString(i_comp+"."+i_obs+".pdf");
+	    factory_cmd.str("");
+	    factory_cmd << pdf;
+	    ws.factory(factory_cmd.str().c_str());
+	    pdfs.push_back(i_comp);
+	  }
 	}
       }
     }
 
     std::string histname() { return "h_" + name; }
-
-    std::string drawcmd(std::string obs_x, std::string obs_y = "") {
-      std::string result;
-      std::string leaf_x = leaves.at(obs_x);
-      std::string leaf_y = "";
-      if (!obs_y.empty()) {
-	leaf_y = leaves.at(obs_y);
-      }
-      if (leaf_y.empty()) {
-	result = leaf_x;
-      }
-      else {
-	result = leaf_y + ":" + leaf_x;
-      }
-      return result;
-    }
 
     TCut cutcmd() { 
       TCut result;
@@ -91,29 +78,42 @@ namespace TrkAnaAnalysis {
       return result;
     }
 
-    void fillData(TTree* tree, std::string obs_x, std::string obs_y = "") {
+    void fillData(TTree* tree) {
 
       RooArgSet vars;
-      RooRealVar* x_var = ws.var(obs_x.c_str());
-      vars.add(*x_var);
-
+      RooRealVar* x_var = 0;
       RooRealVar* y_var = 0;
-      if (!obs_y.empty()) {
-	y_var = ws.var(obs_y.c_str());
-	vars.add(*y_var);
-      }	
+      std::string x_leaf = "";
+      std::string y_leaf = "";
+      for (const auto& i_obs : obs) {
+	RooRealVar* var = ws.var(i_obs.c_str());
+	vars.add(*var);
 
+	if (x_leaf.empty()) {
+	  x_leaf = leaves.at(i_obs);
+	  x_var = var;
+	}
+	else if (y_leaf.empty()) {
+	  y_leaf = leaves.at(i_obs);
+	  y_var = var;
+	}
+      }
+
+      std::string draw = "";
       if (vars.getSize()==1) {
 	hist = x_var->createHistogram(histname().c_str());
+	draw = x_leaf;
       }
       else if (vars.getSize()==2) {
 	hist = x_var->createHistogram(histname().c_str(), RooFit::YVar(*y_var));
+	draw = y_leaf+":"+x_leaf;
       }
       else {
 	throw cet::exception("TrkAnaAnalysis::Analysis") << "Can't create histogram with more than two axes";
       }
+      draw += ">>";
+      draw += hist->GetName();
 
-      std::string draw = drawcmd(obs_x, obs_y) + ">>" + hist->GetName();
       tree->Draw(draw.c_str(), cutcmd(), "goff");
 
       data = new RooDataHist("data", "data", vars, RooFit::Import(*hist));
@@ -126,6 +126,9 @@ namespace TrkAnaAnalysis {
 //	norms.add(RooRealVar("N", "N", 0, 200));
 //      }
 //      modelPdf = new RooAddPdf("model", "model", pdfs, norms);
+      if (pdfs.empty()) {
+	throw cet::exception("TrkAnaAnalysis::Analysis") << "No PDFs defined for this analysis" << std::endl;
+      }
       modelPdf = ws.pdf(pdfs.begin()->c_str());
     }
 
@@ -148,12 +151,13 @@ namespace TrkAnaAnalysis {
     void Write() {
       hist->Write();
       data->Write();
+      /*
       plot("mom")->Write();
 
       TCanvas* c = new TCanvas("c", "c");
       plot("mom")->Draw();
       c->Write();
-
+      */
       ws.Print();
     }
 
@@ -167,6 +171,7 @@ namespace TrkAnaAnalysis {
     RooAbsPdf* modelPdf;
 
     RooWorkspace ws;
+    ObsNames obs;
     LeafNames leaves;
     PdfNames pdfs;
   };

@@ -77,10 +77,15 @@ namespace TrkAnaAnalysis {
     }
 
     for (auto& i_ana : analyses) {
-      i_ana.fillData(trkana, "mom");
-      std::cout << "hist Entries = " << i_ana.hist->GetEntries() << std::endl;
-      i_ana.constructModelPdf();
-      i_ana.fit();
+      if (config.getBool(i_ana.name+".fillHist", false)) {
+	i_ana.fillData(trkana);
+	std::cout << "hist Entries = " << i_ana.hist->GetEntries() << std::endl;
+
+	if (config.getBool(i_ana.name+".fit", false)) {
+	  i_ana.constructModelPdf();
+	  i_ana.fit();
+	}
+      }
     }
 
     std::string outfilename = config.getString("output.filename");
