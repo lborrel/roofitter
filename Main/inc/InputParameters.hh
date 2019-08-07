@@ -9,10 +9,12 @@ namespace TrkAnaAnalysis {
 
   struct InputParameters {
     InputParameters(const mu2e::SimpleConfig& config) : 
-      mom(config, "mom") {
+      mom(config, "mom"),
+      t0(config, "t0") {
     }
 
     Observable mom;
+    Observable t0;
   };
 }
 

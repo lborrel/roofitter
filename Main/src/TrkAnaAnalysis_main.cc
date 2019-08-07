@@ -76,12 +76,7 @@ namespace TrkAnaAnalysis {
 
     InputParameters params(config);
 
-    double min_t0 = 400;
-    double max_t0 = 1800;
-    double t0_width = 100;
-    int n_t0_bins = (max_t0 - min_t0) / t0_width;
-  
-    TH2F* hMomT0 = new TH2F("hMomT0", "", n_t0_bins,min_t0,max_t0, params.mom.n_bins(),params.mom.min,params.mom.max);
+    TH2F* hMomT0 = new TH2F("hMomT0", "", params.t0.n_bins(),params.t0.min,params.t0.max, params.mom.n_bins(),params.mom.min,params.mom.max);
     std::string drawcmd = "deent.mom:de.t0>>hMomT0";
     TCut goodfit = "de.status>0";
     TCut triggered = "(trigbits&0x208)>0";
