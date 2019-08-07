@@ -4,3 +4,7 @@
 *.os
 bin
 *.root
+*.pcm
+*.rootmap
+*.so
+tmp/

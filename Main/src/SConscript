@@ -15,7 +15,12 @@ babarlibs = env['BABARLIBS']
 
 extrarootlibs = [ 'RooFitCore', 'RooFit' ]
 
-mainlib = helper.make_mainlib ( [ ] )
+mainlib = helper.make_mainlib ( [ rootlibs, extrarootlibs ] )
+
+helper.make_dict_and_map( [ mainlib,
+                            rootlibs,
+                            extrarootlibs ] )
+
 
 helper.make_plugins( [ mainlib,
                        'mu2e_TrkExt',
@@ -70,7 +75,8 @@ helper.make_plugins( [ mainlib,
                        'hep_concurrency',
                        ] )
 
-helper.make_bin(target = 'TrkAnaAnalysis', userlibs = [rootlibs,
+helper.make_bin(target = 'TrkAnaAnalysis', userlibs = [mainlib,
+                                                       rootlibs,
                                                        extrarootlibs,
                                                        'mu2e_ConfigTools',
                                                        'cetlib_except'])

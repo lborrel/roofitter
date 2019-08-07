@@ -66,7 +66,7 @@ namespace TrkAnaAnalysis {
     std::string treename = config.getString("input.treename");
     TTree* trkana = (TTree*) file->Get(treename.c_str());
     if (!trkana) {
-      throw cet::exception("TrkAnaANalysis::main") << "Input tree " << treename << " is not in file";
+      throw cet::exception("TrkAnaAnalysis::main") << "Input tree " << treename << " is not in file";
     }
 
     std::vector<Analysis> analyses;
