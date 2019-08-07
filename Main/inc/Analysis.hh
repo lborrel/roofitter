@@ -1,35 +1,48 @@
 #ifndef Analysis_hh_
 #define Analysis_hh_
 
+#include "RooWorkspace.h"
 #include "RooDataHist.h"
 #include "RooPlot.h"
 #include "RooAddPdf.h"
+#include "RooRealVar.h"
 
 #include "ConfigTools/inc/SimpleConfig.hh"
 
-#include "Main/inc/Observable.hh"
-#include "Main/inc/Component.hh"
-#include "Main/inc/CeM.hh"
-
 namespace TrkAnaAnalysis {
+
+  typedef std::string ObsName;
+  typedef std::string LeafName;
+  typedef std::string PdfName;
+
+  typedef std::map<ObsName, LeafName> LeafNames;
+  typedef std::vector<PdfName> PdfNames;
 
   struct Analysis {
     Analysis(std::string name, const mu2e::SimpleConfig& config) : 
-      name(name)
+      name(name),
+      ws(RooWorkspace(name.c_str(), true))
     {
+      std::stringstream factory_cmd;
       std::vector<std::string> all_obs;
       config.getVectorString(name+".observables", all_obs);
-      for (const auto& i_obs : all_obs) {
-	obs.push_back(Observable(config, i_obs));
-      }
-      if (obs.size() == 1) {
-	hist = new TH1F(histname().c_str(), "", obs.at(0).n_bins(),obs.at(0).min,obs.at(0).max);
-      }
-      else if (obs.size() == 2) {
-	hist = new TH2F(histname().c_str(), "", obs.at(0).n_bins(),obs.at(0).min,obs.at(0).max,obs.at(1).n_bins(),obs.at(1).min,obs.at(1).max);
-      }
-      else {
+      if (all_obs.size()>2) {
 	throw cet::exception("TrkAnaAnalysis::Analysis") << "More than 2 observables is not currently supported";
+      }
+
+      for (const auto& i_obs : all_obs) {
+	factory_cmd.str("");
+	double min = config.getDouble(i_obs+".hist.min");
+	double max = config.getDouble(i_obs+".hist.max");
+	factory_cmd << i_obs << "[" << min << ", " << max << "]";
+	ws.factory(factory_cmd.str().c_str());
+
+	double bin_width = config.getDouble(i_obs+".hist.bin_width");
+	ws.var(i_obs.c_str())->setBins( (max-min)/bin_width );
+
+	std::string leaf = config.getString(i_obs+".leaf");
+	leaves.insert(std::pair<ObsName, LeafName>(i_obs, leaf));
+	//	ws.Print();
       }
       
       std::vector<std::string> all_cuts;
@@ -38,29 +51,34 @@ namespace TrkAnaAnalysis {
 	cuts.push_back(TCut(config.getString("cut."+i_cut).c_str()));
       }
 
+      
       std::vector<std::string> all_comps;
       config.getVectorString(name+".components", all_comps);
       for (const auto& i_comp : all_comps) {
-	std::string type = config.getString(i_comp+".type");
-	if (type == "cem") {
-	  comps.push_back(CeM(config, i_comp, obs));
-	}
-	else {
-	  throw cet::exception("TrkAnalysis::Analysis") << "Component " << i_comp << " is unsupported";
+	for (const auto& i_obs : all_obs) {
+	std::string pdf = config.getString(i_comp+"."+i_obs+".pdf");
+	factory_cmd.str("");
+	factory_cmd << pdf;
+	ws.factory(factory_cmd.str().c_str());
+	pdfs.push_back(i_comp);
 	}
       }
-      //      cem = new CeM(config, "cem", obs.at(1));
     }
 
     std::string histname() { return "h_" + name; }
 
-    std::string drawcmd() {
+    std::string drawcmd(std::string obs_x, std::string obs_y = "") {
       std::string result;
-      if (obs.size() == 1) {
-	result = obs.at(0).leaf + ">>" + histname();
+      std::string leaf_x = leaves.at(obs_x);
+      std::string leaf_y = "";
+      if (!obs_y.empty()) {
+	leaf_y = leaves.at(obs_y);
       }
-      else if (obs.size() == 2) {
-	result = obs.at(1).leaf + ":" + obs.at(0).leaf + ">>" + histname();
+      if (leaf_y.empty()) {
+	result = leaf_x;
+      }
+      else {
+	result = leaf_y + ":" + leaf_x;
       }
       return result;
     }
@@ -73,15 +91,32 @@ namespace TrkAnaAnalysis {
       return result;
     }
 
-    void fillData(TTree* tree) {
-      tree->Draw(drawcmd().c_str(), cutcmd(), "goff");
+    void fillData(TTree* tree, std::string obs_x, std::string obs_y = "") {
 
-      if (obs.size() == 1) {
-	data = new RooDataHist("data", "data", RooArgSet(obs.at(0).roo_var), RooFit::Import(*hist));
+      RooArgSet vars;
+      RooRealVar* x_var = ws.var(obs_x.c_str());
+      vars.add(*x_var);
+
+      RooRealVar* y_var = 0;
+      if (!obs_y.empty()) {
+	y_var = ws.var(obs_y.c_str());
+	vars.add(*y_var);
+      }	
+
+      if (vars.getSize()==1) {
+	hist = x_var->createHistogram(histname().c_str());
       }
-      else if (obs.size() == 2) {
-	data = new RooDataHist("data", "data", RooArgSet(obs.at(0).roo_var, obs.at(1).roo_var), RooFit::Import(*hist));
+      else if (vars.getSize()==2) {
+	hist = x_var->createHistogram(histname().c_str(), RooFit::YVar(*y_var));
       }
+      else {
+	throw cet::exception("TrkAnaAnalysis::Analysis") << "Can't create histogram with more than two axes";
+      }
+
+      std::string draw = drawcmd(obs_x, obs_y) + ">>" + hist->GetName();
+      tree->Draw(draw.c_str(), cutcmd(), "goff");
+
+      data = new RooDataHist("data", "data", vars, RooFit::Import(*hist));
     }
 
     void constructModelPdf() {
@@ -91,25 +126,21 @@ namespace TrkAnaAnalysis {
 //	norms.add(RooRealVar("N", "N", 0, 200));
 //      }
 //      modelPdf = new RooAddPdf("model", "model", pdfs, norms);
-modelPdf = comps.begin()->pdf;
+      modelPdf = ws.pdf(pdfs.begin()->c_str());
     }
 
     void fit() {
-std::cout << "AE: modeukPdf = " << modelPdf << std::endl;
-std::cout <<" AE: data = " << data << std::endl;
       modelPdf->fitTo(*data);
     }
 
-    RooPlot* plot() {
+    RooPlot* plot(std::string obs_x) {
+
+      RooRealVar* var = ws.var(obs_x.c_str());
       RooPlot* result = 0;
-      if (obs.size() == 2) {
-	result = obs.at(1).frame();
-      }
-      else if (obs.size() == 1) {
-	result = obs.at(0).frame();
-      }
+      result = var->frame();
+
       data->plotOn(result);
-      //      cem->pdf->plotOn(result);
+      modelPdf->plotOn(result);
       
       return result;
     }
@@ -117,23 +148,27 @@ std::cout <<" AE: data = " << data << std::endl;
     void Write() {
       hist->Write();
       data->Write();
-      plot()->Write();
+      plot("mom")->Write();
 
       TCanvas* c = new TCanvas("c", "c");
-      plot()->Draw();
+      plot("mom")->Draw();
       c->Write();
+
+      ws.Print();
     }
 
     std::string name;
 
-    std::vector<Observable> obs;
     std::vector<TCut> cuts;
 
     TH1* hist;
     RooDataHist* data;
 
-    std::vector<Component> comps;
     RooAbsPdf* modelPdf;
+
+    RooWorkspace ws;
+    LeafNames leaves;
+    PdfNames pdfs;
   };
 }
 
