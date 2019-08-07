@@ -15,10 +15,12 @@ namespace TrkAnaAnalysis {
   typedef std::string ObsName;
   typedef std::string LeafName;
   typedef std::string PdfName;
+  typedef std::string Calculation;
 
   typedef std::vector<ObsName> ObsNames;
   typedef std::map<ObsName, LeafName> LeafNames;
   typedef std::vector<PdfName> PdfNames;
+  typedef std::vector<Calculation> Calculations;
 
   class Analysis {
   public:
@@ -95,6 +97,10 @@ namespace TrkAnaAnalysis {
 	factory_cmd << pdf;
 	ws->factory(factory_cmd.str().c_str());
 	modelPdf = "model";
+
+	// Construct all the calculations
+	config.getVectorString(name+".calculations", calcs);
+	std::cout <<" AE: " << calcs.size() << std::endl;
       }
     }
 
@@ -154,45 +160,33 @@ namespace TrkAnaAnalysis {
       ws->pdf(modelPdf.c_str())->fitTo(*data);
     }
 
-    RooPlot* plot(std::string obs_x) {
-
-      RooRealVar* var = ws->var(obs_x.c_str());
-      RooPlot* result = var->frame();
-
-      ws->data("data")->plotOn(result);
-
-      RooAbsPdf* plotPdf = ws->pdf(modelPdf.c_str());
-      if (!plotPdf) {
-	throw cet::exception("TrkAnalysis::Analsysi::plot") << "Problem getting pdf " << modelPdf;
+    void calculate() {
+      std::stringstream factory_cmd;
+      for (const auto& i_calc : calcs) {
+	std::cout << i_calc << std::endl;
+	factory_cmd.str("");
+	factory_cmd << i_calc;
+	ws->factory(factory_cmd.str().c_str());
       }
-      plotPdf->plotOn(result);
-      
-      return result;
     }
 
     void Write() {
       hist->Write();
-
-      TCanvas* c = new TCanvas("c", "c");
-      plot("mom")->Draw();
-      c->Write();
 
       ws->Print();
       ws->Write();
     }
 
     std::string name;
-
     std::vector<TCut> cuts;
-
     TH1* hist;
-
     RooWorkspace* ws;
     ObsNames obs;
     LeafNames leaves;
     PdfNames pdfs;
     PdfName resolutionPdf;
     PdfName modelPdf;
+    Calculations calcs;
   };
 }
 

@@ -83,6 +83,7 @@ namespace TrkAnaAnalysis {
 
 	if (config.getBool(i_ana.name+".fit", false)) {
 	  i_ana.fit();
+	  i_ana.calculate();
 	}
       }
     }
