@@ -57,18 +57,12 @@ namespace TrkAnaAnalysis {
     mu2e::SimpleConfig config(config_filename);
 
     std::string filename = config.getString("input.filename");
-    if (filename.empty()) {
-      throw cet::exception("TrkAnaAnalysis::main") << "Input filename not specified!";
-    }
     TFile* file = new TFile(filename.c_str(), "READ");
     if (file->IsZombie()) {
       throw cet::exception("TrkAnaAnalysis::main") << "Input file " << filename << " is a zombie";
     }
 
     std::string treename = config.getString("input.treename");
-    if (treename.empty()) {
-      throw cet::exception("TrkAnaAnalysis::main") << "Input treename not specified!";
-    } 
     TTree* trkanaNeg = (TTree*) file->Get(treename.c_str());
     if (!trkanaNeg) {
       throw cet::exception("TrkAnaANalysis::main") << "Input tree " << treename << " is not in file";
@@ -94,7 +88,13 @@ namespace TrkAnaAnalysis {
     std::cout << "hMomT0 Entries = " << hMomT0->GetEntries() << std::endl;
 
     std::cout << "Done" << std::endl;
-  
+
+    std::string outfilename = config.getString("output.filename");
+    TFile* outfile = new TFile(outfilename.c_str(), "RECREATE");
+    hMomT0->Write();
+    outfile->Write();
+    outfile->Close();
+
     return 0;
   }
 }

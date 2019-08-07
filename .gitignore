@@ -3,3 +3,4 @@
 *.o
 *.os
 bin
+*.root
