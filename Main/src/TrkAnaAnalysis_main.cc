@@ -5,6 +5,7 @@
 
 #include "cetlib_except/exception.h"
 
+#include "TCanvas.h"
 #include "TFile.h"
 #include "TTree.h"
 #include "TH2.h"
@@ -68,21 +69,33 @@ namespace TrkAnaAnalysis {
       throw cet::exception("TrkAnaANalysis::main") << "Input tree " << treename << " is not in file";
     }
 
-    Analysis ana("ana", config);
+    std::vector<Analysis> analyses;
+    std::vector<std::string> ana_names;
+    config.getVectorString("analyses", ana_names);
+    for (const auto& i_ana_name : ana_names) {
+      analyses.push_back(Analysis(i_ana_name, config));
+    }
 
-    trkana->Draw(ana.drawcmd().c_str(), ana.cutcmd(), "goff");
+    for (auto& i_ana : analyses) {
+      i_ana.fillData(trkana);
 
-    std::cout << "hMomT0 Entries = " << ana.hMomT0->GetEntries() << std::endl;
+      std::cout << "hist Entries = " << i_ana.hist->GetEntries() << std::endl;
 
-    std::cout << "Done" << std::endl;
+      i_ana.fit();
+    }
 
     std::string outfilename = config.getString("output.filename");
     TFile* outfile = new TFile(outfilename.c_str(), "RECREATE");
-    ana.hMomT0->Write();
-    ana.data->Write();
+    for (auto& i_ana : analyses) {
+      TDirectory* outdir = outfile->mkdir(i_ana.name.c_str());
+      outdir->cd();
+      i_ana.Write();
+      outfile->cd();
+    }
     outfile->Write();
     outfile->Close();
 
+    std::cout << "Done" << std::endl;
     return 0;
   }
 }
