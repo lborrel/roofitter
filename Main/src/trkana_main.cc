@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <fstream>
 
 #include <getopt.h>
 
@@ -15,17 +16,28 @@
 
 namespace trkana {
 
+  struct InputArgs {
+    InputArgs() : cfg_filename(""), need_help(false), debug_cfg(false), debug_cfg_filename("") { }
+
+    std::string cfg_filename;
+    bool need_help;
+    bool debug_cfg;
+    std::string debug_cfg_filename;
+  };
+
   void PrintHelp() {
     std::cout << "Input Arguments:" << std::endl;
-    std::cout << "\t-c, --config: configuration file" << std::endl;
+    std::cout << "\t-c, --config [cfg file]: input configuration file" << std::endl;
+    std::cout << "\t-d, --debug-config [filename]: print out the final config file to file" << std::endl;
     std::cout << "\t-h, --help: print this help message" << std::endl;
   }
 
-  void ProcessArgs(int argc, char** argv, std::string& config_filename) {
-    const char* const short_opts = "c:h";
+  void ProcessArgs(int argc, char** argv, InputArgs& args) {
+    const char* const short_opts = "c:d:h";
 
     const option long_opts[] = {
       {"config", required_argument, nullptr, 'c'},
+      {"debug-config", required_argument, nullptr, 'd'},
       {"help", no_argument, nullptr, 'h'},
       {nullptr, no_argument, nullptr, 0}
     };
@@ -39,13 +51,18 @@ namespace trkana {
       switch (opt) {
     
       case 'c':
-	config_filename = std::string(optarg);
+	args.cfg_filename = std::string(optarg);
+	break;
+
+      case 'd':
+	args.debug_cfg = true;
+	args.debug_cfg_filename = std::string(optarg);
 	break;
 
       case 'h': // -h or --help
       case '?': // Unrecognized option
       default:
-	PrintHelp();
+	args.need_help = true;
 	break;
       }
     }
@@ -53,9 +70,21 @@ namespace trkana {
 
   int main(int argc, char **argv) {
 
-    std::string config_filename;
-    ProcessArgs(argc, argv, config_filename);
-    mu2e::SimpleConfig config(config_filename);
+    InputArgs args;
+    ProcessArgs(argc, argv, args);
+    if (args.need_help) {
+      PrintHelp();
+      return 0;
+    }
+
+    mu2e::SimpleConfig config(args.cfg_filename);
+    if (args.debug_cfg) {
+      std::ofstream fileout(args.debug_cfg_filename);
+      config.print(fileout);
+      std::cout << "Config written to " << args.debug_cfg_filename << std::endl;
+      return 0;
+    }
+
 
     std::string filename = config.getString("input.filename");
     TFile* file = new TFile(filename.c_str(), "READ");
@@ -77,15 +106,9 @@ namespace trkana {
     }
 
     for (auto& i_ana : analyses) {
-      if (config.getBool(i_ana.name+".fillHist", false)) {
-	i_ana.fillData(trkana);
-	std::cout << "hist Entries = " << i_ana.hist->GetEntries() << std::endl;
-
-	if (config.getBool(i_ana.name+".fit", false)) {
-	  i_ana.fit();
-	  i_ana.calculate();
-	}
-      }
+      i_ana.fillData(trkana);
+      i_ana.fit();
+      i_ana.calculate();
     }
 
     std::string outfilename = config.getString("output.filename");
