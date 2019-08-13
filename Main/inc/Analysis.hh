@@ -1,12 +1,18 @@
 #ifndef Analysis_hh_
 #define Analysis_hh_
 
+#include "TFile.h"
+#include "TH1.h"
+
 #include "RooWorkspace.h"
 #include "RooDataHist.h"
 #include "RooPlot.h"
 #include "RooAddPdf.h"
 #include "RooFFTConvPdf.h"
 #include "RooRealVar.h"
+#include "RooFitResult.h"
+#include "RooHistPdf.h"
+#include "RooEffProd.h"
 
 #include "ConfigTools/inc/SimpleConfig.hh"
 
@@ -59,35 +65,93 @@ namespace trkana {
 	cuts.push_back(TCut(config.getString("cut."+i_cut).c_str()));
       }
 
-      if (config.getBool(name+".fit", false)) {
-	// Construct the component PDFs
-	std::vector<std::string> all_comps;
-	config.getVectorString(name+".components", all_comps);
-	for (const auto& i_comp : all_comps) {
-	  for (const auto& i_obs : all_obs) {
-	    std::string pdf = config.getString(i_comp+"."+i_obs+".pdf");
-	    factory_cmd.str("");
-	    factory_cmd << pdf;
-	    ws->factory(factory_cmd.str().c_str());
-	    pdfs.push_back(i_comp);
-	  }
+      // Construct the component PDFs
+      std::vector<std::string> all_comps;
+      config.getVectorString(name+".components", all_comps);
+      for (const auto& i_comp : all_comps) {
+	for (const auto& i_obs : all_obs) {
+	  std::string pdf = config.getString(i_comp+"."+i_obs+".pdf");
+	  factory_cmd.str("");
+	  factory_cmd << pdf;
+	  ws->factory(factory_cmd.str().c_str());
+	  pdfs.push_back(i_comp);
 	}
+      }
+
+      for (const auto& i_obs : all_obs) {
 
 	// Construct te resolution PDFs and the smeared PDFs
-	for (const auto& i_obs : all_obs) {
-	  std::string res_pdf = config.getString("res."+i_obs+".pdf");
-	  factory_cmd.str("");
-	  factory_cmd << res_pdf;
-	  ws->factory(factory_cmd.str().c_str());
-	  resolutionPdf = "res";
+	if (config.getBool(i_obs+".res.on", false)) {
+	  std::string res_type = config.getString(i_obs+".res.type");
+	  
+	  if (res_type == "pdf") {
+	    std::string res_pdf = config.getString(i_obs+".res.pdf");
+	    factory_cmd.str("");
+	    factory_cmd << res_pdf;
+	    ws->factory(factory_cmd.str().c_str());
+	  }
+	  else if (res_type == "hist") {
+	    std::string res_filename = config.getString(i_obs+"res.hist.file");
+	    std::string res_histname = config.getString(i_obs+"res.hist.name");
+	    
+	    TFile* res_file = new TFile(res_filename.c_str(), "READ");
+	    if (res_file->IsZombie()) {
+	      throw cet::exception("Analysis::Analsysis") << "Resolution file " << res_filename << " is a zombie";
+	    }
+	    TH1* res_hist = (TH1*) res_file->Get(res_histname.c_str());
+	    if (!res_hist) {
+	      throw cet::exception("Analysis::Analysis") << "Resolution histogram " << res_histname << " is not in file";
+	    }
 
+	    ws->import(*(new RooDataHist("res_hist", "res_hist", *ws->var(i_obs.c_str()), RooFit::Import(*res_hist))));
+	    ws->import(*(new RooHistPdf("res", "", *ws->var(i_obs.c_str()), *((RooDataHist*)ws->data("res_hist")))));
+	  }
+	  else {
+	    throw cet::exception("Analysis") << "Unsupported resolution type: " << res_type;
+	  }
+
+	  resolutionPdf = "res";
 	  for (const auto& i_comp : all_comps) {
 	    std::string pdfName = i_comp + "res";
 	    factory_cmd.str("");
 	    factory_cmd << "FCONV::" << pdfName << "(" << i_obs << ", " << i_comp << ", " << resolutionPdf << ")";
 	    ws->factory(factory_cmd.str().c_str());
+	    
+	    ((RooFFTConvPdf*) ws->pdf(pdfName.c_str()))->setBufferFraction(5.0);
+	  }
+	}
 
-	    ((RooFFTConvPdf*) ws->pdf(pdfName.c_str()))->setBufferFraction(2.0);
+	// Construct any efficiency pdfs
+	if (config.getBool(i_obs+".eff.on", false)) {
+	  std::string eff_type = config.getString(i_obs+".eff.type");
+	    
+	  if (eff_type == "func") {
+	    std::vector<std::string> eff_params;
+	    config.getVectorString(i_obs+".eff.func.params", eff_params);
+
+	    RooArgList list;
+	    list.add(*ws->var(i_obs.c_str()));
+	    for (const auto i_param : eff_params) {
+	      factory_cmd.str("");
+	      factory_cmd << i_param << "[" << config.getDouble(i_obs+".eff.func."+i_param) << "]";
+	      ws->factory(factory_cmd.str().c_str());
+
+	      list.add(*ws->var(i_param.c_str()));
+	    }
+	    std::string eff_func = config.getString(i_obs+".eff.func");
+	    ws->import(*( new RooFormulaVar("effFunc", eff_func.c_str(), list)));
+
+	    /*
+	      for (const auto& i_comp : all_comps) {
+	      std::string basePdfName = i_comp + "res";
+	      std::string pdfName = i_comp + "resEff";
+		
+	      ws->import(*(new RooEffProd(pdfName.c_str(), "", *ws->pdf(basePdfName.c_str()), *ws->function("effFunc"))));
+	      }
+	    */
+	  }
+	  else {
+	    throw cet::exception("Analysis") << "Unsupported efficiency type: " << eff_type;
 	  }
 	}
 
@@ -98,9 +162,13 @@ namespace trkana {
 	ws->factory(factory_cmd.str().c_str());
 	modelPdf = "model";
 
-	// Construct all the calculations
-	config.getVectorString(name+".calculations", calcs);
+	if (config.getBool(i_obs+".eff.on", false)) {
+	  ws->import(*(new RooEffProd("modelWEff", "", *ws->pdf("model"), *ws->function("effFunc"))));
+	  modelPdf = "modelWEff";
+	}
       }
+      // Construct all the calculations
+      config.getVectorString(name+".calculations", calcs);
     }
 
     TCut cutcmd() { 
@@ -156,7 +224,7 @@ namespace trkana {
 
     void fit() {
       RooAbsData* data = ws->data("data");
-      ws->pdf(modelPdf.c_str())->fitTo(*data);
+      fitResult = ws->pdf(modelPdf.c_str())->fitTo(*data, RooFit::Save());
     }
 
     void calculate() {
@@ -170,6 +238,8 @@ namespace trkana {
 
     void Write() {
       hist->Write();
+      
+      fitResult->Write();
 
       ws->Print();
       ws->Write();
@@ -185,6 +255,7 @@ namespace trkana {
     PdfName resolutionPdf;
     PdfName modelPdf;
     Calculations calcs;
+    RooFitResult* fitResult;
   };
 }
 
