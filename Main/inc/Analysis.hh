@@ -3,6 +3,7 @@
 
 #include "TFile.h"
 #include "TH1.h"
+#include "TF1.h"
 
 #include "RooWorkspace.h"
 #include "RooDataHist.h"
@@ -88,8 +89,9 @@ namespace trkana {
       }
 
       for (const auto& i_obs : all_obs) {
-	// Construct any efficiency pdfs
 	std::string currentPdfSuffix = "";
+
+	// Construct any efficiency pdfs
 	std::string eff_name = config.getString(name+"."+i_obs+".eff.name", "");
 	if (!eff_name.empty()) {
 	  std::string eff_type = config.getString(i_obs+".eff."+eff_name+".type");
@@ -191,6 +193,10 @@ namespace trkana {
 	ws->factory(factory_cmd.str().c_str());
 	modelPdf = "model";
 
+	double min_fit_range = config.getDouble(i_obs+".fit.min");
+	double max_fit_range = config.getDouble(i_obs+".fit.max");
+	ws->var(i_obs.c_str())->setRange("fit", min_fit_range, max_fit_range);
+
 	//	if (!eff_name.empty()){
 	//	  ws->import(*(new RooEffProd("modelWEff", "", *ws->pdf(modelPdf.c_str()), *ws->function("effFunc"))));
 	//	  modelPdf = "modelWEff";
@@ -253,7 +259,113 @@ namespace trkana {
 
     void fit() {
       RooAbsData* data = ws->data("data");
-      fitResult = ws->pdf(modelPdf.c_str())->fitTo(*data, RooFit::Save());
+      fitResult = ws->pdf(modelPdf.c_str())->fitTo(*data, RooFit::Save(), RooFit::Range("fit"));
+    }
+
+    void unfold() {
+      // Unfold efficiency
+      // should have an efficiency function, yields of each component as functions of momentum
+      RooAddPdf* full_model = (RooAddPdf*) ws->pdf(modelPdf.c_str());
+      for (const auto& i_obs : obs) {
+	RooRealVar* obs = ws->var(i_obs.c_str());
+	double min_obs = obs->getMin();
+	double max_obs = obs->getMax();
+	double obs_step = (max_obs - min_obs) / obs->getBins();
+
+	RooFormulaVar* effFunc = (RooFormulaVar*) ws->function("effFunc");
+	TF1* effFn = effFunc->asTF(*obs, RooArgList(), RooArgList());
+
+	int i_comp = 0;
+	for (const auto& i_pdf : pdfs) {
+	  std::string pdfname = i_pdf + "EffRes";
+	  RooAbsPdf* comp_pdf = ws->pdf(pdfname.c_str());
+
+	  RooRealVar* this_yield = (RooRealVar*) full_model->coefList().at(i_comp);
+	  double this_yield_val = this_yield->getVal();
+	  double this_yield_error = this_yield->getPropagatedError(*fitResult);
+
+	  double final_yield = 0;
+	  for (double i_obs = min_obs; i_obs < max_obs; i_obs += obs_step) {
+	    double j_obs = i_obs + obs_step;
+	    
+	    obs->setRange("range", i_obs, j_obs);
+	    
+	    double i_eff = effFn->Eval(i_obs);
+	    std::cout << "Eff @ " << i_obs << " MeV = " << i_eff << std::endl;
+	    
+	    RooAbsReal* comp_pdf_integral = comp_pdf->createIntegral(*obs, RooFit::NormSet(*obs), RooFit::Range("range"));
+	    double comp_pdf_integral_val = comp_pdf_integral->getVal();
+	    std::cout << "Comp_Pdf Integral " << i_obs << "--" << j_obs << " MeV = " << comp_pdf_integral_val;
+	    std::cout << "This Yield = " << this_yield_val << " +/- " << this_yield_error << std::endl;
+	    double i_yield = this_yield_val * comp_pdf_integral_val;
+	    double i_yield_err = (this_yield_error / this_yield_val) * i_yield;
+	    double i_total_yield = i_yield / i_eff;
+	    double i_total_yield_err = (i_yield_err / i_yield) * i_total_yield;
+	    std::cout << "Comp_Pdf Integral " << i_obs << "--" << j_obs << " MeV * Yield = " << i_yield << " +/- " << i_yield_err << std::endl;
+	    std::cout << "Accounting for eff = " << i_total_yield << " +/- " << i_total_yield_err << std::endl;
+	    final_yield += i_total_yield;
+	  }
+	  double final_yield_err = (this_yield_error / this_yield_val) * final_yield;
+	  std::cout << "Final NYield = " << final_yield << " +/- " << final_yield_err << std::endl;
+	  //	  std::cout << "Final Total NYield = " << final_total_yield << std::endl;
+	  
+	  std::string new_yield_name = this_yield->GetName();
+	  new_yield_name += "Eff";
+	  RooRealVar* unfold_eff_yield = new RooRealVar(new_yield_name.c_str(), "", final_yield);
+	  unfold_eff_yield->setError(final_yield_err);
+	  ws->import(*unfold_eff_yield);
+
+	  
+	  RooAbsPdf* truePdf = ws->pdf(i_pdf.c_str());
+	  RooAbsPdf* resPdf = ws->pdf(resolutionPdf.c_str());
+	  double total_fraction_smeared_away = 0;
+	  double min_res = -2; double max_res = 5;
+	  for (double i_obs = min_obs; i_obs < max_obs; i_obs += obs_step) {
+	    double j_obs = i_obs + obs_step;
+
+	    obs->setMax(max_obs);	    
+	    obs->setMin(min_obs);
+	    obs->setRange("new", i_obs, j_obs);
+	    RooAbsReal* truePdf_integral = truePdf->createIntegral(*obs, RooFit::NormSet(*obs), RooFit::Range("new"));
+	    double truePdf_integral_val = truePdf_integral->getVal();
+	    std::cout << "AE: truePdf_integral_val (" << i_obs << " MeV -- " << j_obs << " MeV) = " << truePdf_integral_val << std::endl;
+	    if(truePdf_integral_val<1e-3) {
+	      break;
+	    }
+
+	    obs->setMin(min_res);
+	    obs->setMax(max_res);	    
+	    double min_res_smear = min_res;
+	    double max_res_smear = min_obs-j_obs;
+	    if (max_res_smear < min_res_smear) {
+	      break;
+	    }
+	    obs->setRange("resRange", min_res_smear, max_res_smear);
+
+	    RooAbsReal* resPdf_integral = resPdf->createIntegral(*obs, RooFit::NormSet(*obs), RooFit::Range("resRange"));
+	    double resPdf_integral_val = resPdf_integral->getVal();
+	    std::cout << "AE: resPdf_integral_val (" << min_res_smear << " MeV -- " << max_res_smear << " MeV) = " << resPdf_integral_val << std::endl;
+
+	    double smeared_away = resPdf_integral_val * truePdf_integral_val;
+	    std::cout << "Fraction Smeared Away = " << smeared_away << std::endl;
+	    total_fraction_smeared_away += smeared_away;
+	  }
+	  std::cout << "Total Fraction Smeared Away = " << total_fraction_smeared_away << std::endl;
+	  std::string frac_smeared_name = i_pdf + "FracSmeared";
+	  RooRealVar* frac_smeared = new RooRealVar(frac_smeared_name.c_str(), "", total_fraction_smeared_away);
+	  //	  unfold_eff_yield->setError(final_yield_err);
+	  ws->import(*frac_smeared);
+
+	  // Clean up
+	  obs->setMax(max_obs);	    
+	  obs->setMin(min_obs);
+	  
+	  ++i_comp;
+	}
+      }
+
+      // Unfold resolution?
+      // just calculate the fraction of the truth that will have smeared outside of the bounds of the histogram
     }
 
     void calculate() {

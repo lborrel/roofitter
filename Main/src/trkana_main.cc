@@ -108,6 +108,9 @@ namespace trkana {
     for (auto& i_ana : analyses) {
       i_ana.fillData(trkana);
       i_ana.fit();
+      if (config.getBool(i_ana.name+".unfold", false)) {
+	i_ana.unfold();
+      }
       i_ana.calculate();
     }
 
