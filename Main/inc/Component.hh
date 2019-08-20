@@ -69,6 +69,39 @@ namespace trkana {
       }
     }
 
+    // Returns the efficiency correction to apply to any yield
+    // (i.e. it is the efficiency 
+    double getEffCorrection(const Observable& obs, RooWorkspace* ws) const {
+
+      if (effPdfName.empty()) {
+	throw cet::exception("Component::getEffCorrection") << "Trying to correct for efficiency when effPdfName is empty";
+      }
+
+      RooAbsPdf* this_pdf = ws->pdf(resPdfName.c_str());
+      RooRealVar* this_obs = ws->var(obs.name.c_str());
+      RooFormulaVar* effFunc = (RooFormulaVar*) ws->function(obs.effName.c_str());
+      TF1* effFn = effFunc->asTF(*this_obs, RooArgList(), RooArgList());
+
+      double result = 0;
+      double obs_step = obs.hist_bin_width;
+      for (double i_obs = obs.hist_min; i_obs < obs.hist_max; i_obs += obs_step) {
+	double j_obs = i_obs + obs_step;
+	    
+	this_obs->setRange("range", i_obs, j_obs);
+	    
+	double i_eff = effFn->Eval(i_obs);
+	//	std::cout << "Eff @ " << i_obs << " MeV = " << i_eff << std::endl;
+
+	RooAbsReal* pdf_integral = this_pdf->createIntegral(*this_obs, RooFit::NormSet(*this_obs), RooFit::Range("range"));
+	double i_pdf = pdf_integral->getVal();
+	//	std::cout << effPdfName << " @ " << i_obs << " MeV = " << i_pdf << std::endl;
+	double i_effCorr = i_pdf / i_eff;
+	result += i_effCorr;
+      }
+
+      return result;
+    }
+
     std::string name;
     std::string effPdfName;
     std::string resPdfName;

@@ -147,59 +147,38 @@ namespace trkana {
     }
 
     void unfold() {
-      /*
       // Unfold efficiency
       // should have an efficiency function and yields of each component as function of the observable
       RooAddPdf* full_model = (RooAddPdf*) ws->pdf(modelPdf.c_str());
-      for (const auto& i_obs : obs) {
-	RooRealVar* obs = ws->var(i_obs.c_str());
-	double min_obs = obs->getMin();
-	double max_obs = obs->getMax();
-	double obs_step = (max_obs - min_obs) / obs->getBins();
+      size_t i_element = 0;
+      for (const auto& i_comp : components) {
+	if (!i_comp.effPdfName.empty()) {
+	  RooRealVar* i_comp_yield = (RooRealVar*) full_model->coefList().at(i_element);
+	  double i_comp_yield_val = i_comp_yield->getVal();
+	  double i_comp_yield_err = i_comp_yield->getPropagatedError(*fitResult);
 
-	RooFormulaVar* effFunc = (RooFormulaVar*) ws->function("effFunc");
-	TF1* effFn = effFunc->asTF(*obs, RooArgList(), RooArgList());
+	  double effCorr = i_comp.getEffCorrection(observables.at(0), ws); //TODO: handle more than one dimension
+	  double i_comp_final_yield_val = i_comp_yield_val * effCorr;
+	  double i_comp_final_yield_err = (i_comp_yield_err / i_comp_yield_val) * i_comp_final_yield_val;
 
+	  std::string new_yield_name = i_comp_yield->GetName();
+	  new_yield_name += "Eff";
+	  RooRealVar* i_comp_final_yield = new RooRealVar(new_yield_name.c_str(), "", i_comp_final_yield_val);
+	  i_comp_final_yield->setError(i_comp_final_yield_err);
+	  ws->import(*i_comp_final_yield);
+
+	  std::cout << "AE: Initial : " << i_comp_yield_val << " +/- " << i_comp_yield_err << std::endl;
+	  std::cout << "AE: --> Corrected : " << i_comp_final_yield_val << " +/- " << i_comp_final_yield_err << std::endl;
+	}
+
+	++i_element;
+      }
+
+
+      /*      for (const auto& i_obs : obs) {
+	
 	int i_comp = 0;
 	for (const auto& i_pdf : pdfs) {
-	  std::string pdfname = i_pdf + "EffRes";
-	  RooAbsPdf* comp_pdf = ws->pdf(pdfname.c_str());
-
-	  RooRealVar* this_yield = (RooRealVar*) full_model->coefList().at(i_comp);
-	  double this_yield_val = this_yield->getVal();
-	  double this_yield_error = this_yield->getPropagatedError(*fitResult);
-
-	  double final_yield = 0;
-	  for (double i_obs = min_obs; i_obs < max_obs; i_obs += obs_step) {
-	    double j_obs = i_obs + obs_step;
-	    
-	    obs->setRange("range", i_obs, j_obs);
-	    
-	    double i_eff = effFn->Eval(i_obs);
-	    //	    std::cout << "Eff @ " << i_obs << " MeV = " << i_eff << std::endl;
-	    
-	    RooAbsReal* comp_pdf_integral = comp_pdf->createIntegral(*obs, RooFit::NormSet(*obs), RooFit::Range("range"));
-	    double comp_pdf_integral_val = comp_pdf_integral->getVal();
-	    //	    std::cout << "Comp_Pdf Integral " << i_obs << "--" << j_obs << " MeV = " << comp_pdf_integral_val;
-	    //	    std::cout << "This Yield = " << this_yield_val << " +/- " << this_yield_error << std::endl;
-	    double i_yield = this_yield_val * comp_pdf_integral_val;
-	    double i_yield_err = (this_yield_error / this_yield_val) * i_yield;
-	    double i_total_yield = i_yield / i_eff;
-	    double i_total_yield_err = (i_yield_err / i_yield) * i_total_yield;
-	    //	    std::cout << "Comp_Pdf Integral " << i_obs << "--" << j_obs << " MeV * Yield = " << i_yield << " +/- " << i_yield_err << std::endl;
-	    //	    std::cout << "Accounting for eff = " << i_total_yield << " +/- " << i_total_yield_err << std::endl;
-	    final_yield += i_total_yield;
-	  }
-	  double final_yield_err = (this_yield_error / this_yield_val) * final_yield;
-	  //	  std::cout << "Final NYield = " << final_yield << " +/- " << final_yield_err << std::endl;
-	  
-	  std::string new_yield_name = this_yield->GetName();
-	  new_yield_name += "Eff";
-	  RooRealVar* unfold_eff_yield = new RooRealVar(new_yield_name.c_str(), "", final_yield);
-	  unfold_eff_yield->setError(final_yield_err);
-	  ws->import(*unfold_eff_yield);
-
-	  
 	  RooAbsPdf* truePdf = ws->pdf(i_pdf.c_str());
 	  RooAbsPdf* resPdf = ws->pdf(resolutionPdf.c_str());
 	  double total_fraction_smeared_away = 0;
@@ -247,9 +226,9 @@ namespace trkana {
 	  ++i_comp;
 	}
       }
-*/
       // Unfold resolution?
       // just calculate the fraction of the truth that will have smeared outside of the bounds of the histogram
+      */
     }
 
     void calculate() {
@@ -274,9 +253,7 @@ namespace trkana {
     std::vector<TCut> cuts;
     TH1* hist;
     RooWorkspace* ws;
-    //    ObsNames obs;
-    //    LeafNames leaves;
-  //    PdfName resolutionPdf;
+
     PdfName modelPdf;
     Observables observables;
     Components components;
