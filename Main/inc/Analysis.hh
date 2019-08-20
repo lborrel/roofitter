@@ -167,68 +167,21 @@ namespace trkana {
 	  i_comp_final_yield->setError(i_comp_final_yield_err);
 	  ws->import(*i_comp_final_yield);
 
-	  std::cout << "AE: Initial : " << i_comp_yield_val << " +/- " << i_comp_yield_err << std::endl;
-	  std::cout << "AE: --> Corrected : " << i_comp_final_yield_val << " +/- " << i_comp_final_yield_err << std::endl;
+	  //	  std::cout << "AE: Initial : " << i_comp_yield_val << " +/- " << i_comp_yield_err << std::endl;
+	  //	  std::cout << "AE: --> Corrected : " << i_comp_final_yield_val << " +/- " << i_comp_final_yield_err << std::endl;
 	}
 
-	++i_element;
-      }
+	// Calculate the fraction of the tru spectrum that has smeared out
+	if(!i_comp.resPdfName.empty()) {
 
-
-      /*      for (const auto& i_obs : obs) {
-	
-	int i_comp = 0;
-	for (const auto& i_pdf : pdfs) {
-	  RooAbsPdf* truePdf = ws->pdf(i_pdf.c_str());
-	  RooAbsPdf* resPdf = ws->pdf(resolutionPdf.c_str());
-	  double total_fraction_smeared_away = 0;
-	  double min_res = -2; double max_res = 5;
-	  for (double i_obs = min_obs; i_obs < max_obs; i_obs += obs_step) {
-	    double j_obs = i_obs + obs_step;
-
-	    obs->setMax(max_obs);	    
-	    obs->setMin(min_obs);
-	    obs->setRange("new", i_obs, j_obs);
-	    RooAbsReal* truePdf_integral = truePdf->createIntegral(*obs, RooFit::NormSet(*obs), RooFit::Range("new"));
-	    double truePdf_integral_val = truePdf_integral->getVal();
-	    std::cout << "AE: truePdf_integral_val (" << i_obs << " MeV -- " << j_obs << " MeV) = " << truePdf_integral_val << std::endl;
-	    if(truePdf_integral_val<1e-3) {
-	      break;
-	    }
-
-	    obs->setMin(min_res);
-	    obs->setMax(max_res);	    
-	    double min_res_smear = min_res;
-	    double max_res_smear = min_obs-j_obs;
-	    if (max_res_smear < min_res_smear) {
-	      break;
-	    }
-	    obs->setRange("resRange", min_res_smear, max_res_smear);
-
-	    RooAbsReal* resPdf_integral = resPdf->createIntegral(*obs, RooFit::NormSet(*obs), RooFit::Range("resRange"));
-	    double resPdf_integral_val = resPdf_integral->getVal();
-	    std::cout << "AE: resPdf_integral_val (" << min_res_smear << " MeV -- " << max_res_smear << " MeV) = " << resPdf_integral_val << std::endl;
-
-	    double smeared_away = resPdf_integral_val * truePdf_integral_val;
-	    std::cout << "Fraction Smeared Away = " << smeared_away << std::endl;
-	    total_fraction_smeared_away += smeared_away;
-	  }
-	  std::cout << "Total Fraction Smeared Away = " << total_fraction_smeared_away << std::endl;
-	  std::string frac_smeared_name = i_pdf + "FracSmeared";
-	  RooRealVar* frac_smeared = new RooRealVar(frac_smeared_name.c_str(), "", total_fraction_smeared_away);
+	  double frac_smeared_away = i_comp.getFracSmeared(observables.at(0), ws); // TODO: handle more than one dimension
+	  std::string frac_smeared_name = i_comp.name + "FracSmeared";
+	  RooRealVar* frac_smeared = new RooRealVar(frac_smeared_name.c_str(), "", frac_smeared_away);
 	  //	  unfold_eff_yield->setError(final_yield_err);
 	  ws->import(*frac_smeared);
-
-	  // Clean up
-	  obs->setMax(max_obs);	    
-	  obs->setMin(min_obs);
-	  
-	  ++i_comp;
 	}
+	++i_element;
       }
-      // Unfold resolution?
-      // just calculate the fraction of the truth that will have smeared outside of the bounds of the histogram
-      */
     }
 
     void calculate() {
