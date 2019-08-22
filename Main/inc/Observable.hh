@@ -6,8 +6,9 @@
 
 namespace trkana {
 
-  struct Observable {
+  class Observable {
 
+  public:
     Observable(const std::string& obs_name, const std::string& eff_name, const std::string& res_name, const mu2e::SimpleConfig& config, RooWorkspace* ws) : name(obs_name), effName(eff_name), resName(res_name) {
 
       std::stringstream factory_cmd;
@@ -98,6 +99,19 @@ namespace trkana {
       }
     }
 
+    std::string getName() const { return name; }
+    std::string getLeaf() const { return leaf; }
+    double getHistMin() const { return hist_min; }
+    double getHistMax() const { return hist_max; }
+    double getHistBinWidth() const { return hist_bin_width; }
+
+    std::string getEffName() const { return effName; }
+
+    std::string getResName() const { return resName; }
+    double getResValidMin() const { return res_valid_min; }
+    double getResValidMax() const { return res_valid_max; }
+
+  private:
     std::string name;
 
     std::string leaf;

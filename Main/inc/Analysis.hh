@@ -97,15 +97,15 @@ namespace trkana {
       std::string x_leaf = "";
       std::string y_leaf = "";
       for (const auto& i_obs : observables) {
-	RooRealVar* var = ws->var(i_obs.name.c_str());
+	RooRealVar* var = ws->var(i_obs.getName().c_str());
 	vars.add(*var);
 
 	if (x_leaf.empty()) {
-	  x_leaf = i_obs.leaf;
+	  x_leaf = i_obs.getLeaf();
 	  x_var = var;
 	}
 	else if (y_leaf.empty()) {
-	  y_leaf = i_obs.leaf;
+	  y_leaf = i_obs.getLeaf();
 	  y_var = var;
 	}
       }
@@ -166,7 +166,7 @@ namespace trkana {
 	  //	if(!i_comp.resPdfName.empty()) {
 
 	  double frac_smeared_away = i_comp.getFracSmeared(observables.at(0), ws); // TODO: handle more than one dimension
-	  std::string frac_smeared_name = i_comp.name + "FracSmeared";
+	  std::string frac_smeared_name = i_comp.getName() + "FracSmeared";
 	  RooRealVar* frac_smeared = new RooRealVar(frac_smeared_name.c_str(), "", frac_smeared_away);
 	  //	  unfold_eff_yield->setError(final_yield_err);
 	  ws->import(*frac_smeared);

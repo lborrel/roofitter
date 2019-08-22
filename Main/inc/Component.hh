@@ -11,8 +11,9 @@ namespace trkana {
   typedef std::string ObsName;
   typedef std::string PdfName;
 
-  struct Component {
+  class Component {
 
+  public:
     Component(const std::string& comp_name, const mu2e::SimpleConfig& config, RooWorkspace* ws) : name(comp_name) {
     }
 
@@ -23,41 +24,41 @@ namespace trkana {
       for (const auto& obs : all_obs) {
 	++i_obs;
 	// Construct the true Pdf
-	std::string pdf = config.getString(name+"."+obs.name+".pdf");
+	std::string pdf = config.getString(name+"."+obs.getName()+".pdf");
 
 	factory_cmd.str("");
 	factory_cmd << pdf;
 	ws->factory(factory_cmd.str().c_str());
 
-	std::string truePdfName = name+obs.name;
-	truePdfNames.insert(std::pair<ObsName, PdfName>(obs.name, truePdfName));
+	std::string truePdfName = name+obs.getName();
+	truePdfNames.insert(std::pair<ObsName, PdfName>(obs.getName(), truePdfName));
 	std::string effPdfName = "";
 	std::string resPdfName = "";
 
 	// Construct the Pdf with Eff, if possible
 	std::string currentPdfSuffix = "";
-	if(!obs.effName.empty()) {
+	if(!obs.getEffName().empty()) {
 	  std::string this_suffix = "Eff";
 
 	  std::string currentPdfName = truePdfName + currentPdfSuffix;
 	  effPdfName = currentPdfName + this_suffix;
-	  effPdfNames.insert(std::pair<ObsName, PdfName>(obs.name, effPdfName));
+	  effPdfNames.insert(std::pair<ObsName, PdfName>(obs.getName(), effPdfName));
 	    
 	  // Construct the Pdfs that include efficiency
-	  ws->import(*(new RooEffProd(effPdfName.c_str(), "", *ws->pdf(currentPdfName.c_str()), *ws->function(obs.effName.c_str()))));
+	  ws->import(*(new RooEffProd(effPdfName.c_str(), "", *ws->pdf(currentPdfName.c_str()), *ws->function(obs.getEffName().c_str()))));
 	  
 	  currentPdfSuffix += this_suffix;
 	}
 
 	// Construct the smeared pdf
-	if (!obs.resName.empty()) {
+	if (!obs.getResName().empty()) {
 	  std::string this_suffix = "Res";
 	  std::string currentPdfName = truePdfName + currentPdfSuffix;
 	  resPdfName = currentPdfName + this_suffix;
-	  resPdfNames.insert(std::pair<ObsName, PdfName>(obs.name, resPdfName));
+	  resPdfNames.insert(std::pair<ObsName, PdfName>(obs.getName(), resPdfName));
 	  
 	  factory_cmd.str("");
-	  factory_cmd << "FCONV::" << resPdfName << "(" << obs.name << ", " << currentPdfName << ", " << obs.resName << ")";
+	  factory_cmd << "FCONV::" << resPdfName << "(" << obs.getName() << ", " << currentPdfName << ", " << obs.getResName() << ")";
 	  ws->factory(factory_cmd.str().c_str());
 	
 	  ((RooFFTConvPdf*) ws->pdf(resPdfName.c_str()))->setBufferFraction(5.0);
@@ -66,7 +67,7 @@ namespace trkana {
 	}
 
 	// Set any new integrator for all the Pdfs
-	std::string new_integrator = config.getString(name+"."+obs.name+".integrator", "");
+	std::string new_integrator = config.getString(name+"."+obs.getName()+".integrator", "");
 	if (!new_integrator.empty()) {
 	  RooNumIntConfig customConfig(*RooAbsReal::defaultIntegratorConfig());
 	  customConfig.method1D().setLabel(new_integrator.c_str());
@@ -86,7 +87,7 @@ namespace trkana {
       // Now create 2D models from these
       if (all_obs.size()==2) {
 
-	std::string xObs = all_obs.at(0).name;
+	std::string xObs = all_obs.at(0).getName();
 	std::string xPdf = "";
  	if(resPdfNames.find(xObs) != resPdfNames.end()) {
 	  xPdf = resPdfNames.at(xObs);
@@ -101,7 +102,7 @@ namespace trkana {
 	  throw cet::exception("Component::constructPdfs") << "No valid Pdf name for 2D pdf";
 	}
 
-	std::string yObs = all_obs.at(1).name;
+	std::string yObs = all_obs.at(1).getName();
 	std::string yPdf = "";
  	if(resPdfNames.find(yObs) != resPdfNames.end()) {
 	  yPdf = resPdfNames.at(yObs);
@@ -133,14 +134,16 @@ namespace trkana {
     // (i.e. it is the efficiency 
     double getEffCorrection(const Observable& obs, RooWorkspace* ws) const {
 
-      RooAbsPdf* this_pdf = ws->pdf(resPdfNames.at(obs.name).c_str());
-      RooRealVar* this_obs = ws->var(obs.name.c_str());
-      RooFormulaVar* effFunc = (RooFormulaVar*) ws->function(obs.effName.c_str());
+      RooAbsPdf* this_pdf = ws->pdf(resPdfNames.at(obs.getName()).c_str());
+      RooRealVar* this_obs = ws->var(obs.getName().c_str());
+      RooFormulaVar* effFunc = (RooFormulaVar*) ws->function(obs.getEffName().c_str());
       TF1* effFn = effFunc->asTF(*this_obs, RooArgList(), RooArgList());
 
       double result = 0;
-      double obs_step = obs.hist_bin_width;
-      for (double i_obs = obs.hist_min; i_obs < obs.hist_max; i_obs += obs_step) {
+      double min_obs = obs.getHistMin();
+      double max_obs = obs.getHistMax();
+      double obs_step = obs.getHistBinWidth();
+      for (double i_obs = min_obs; i_obs < max_obs; i_obs += obs_step) {
 	double j_obs = i_obs + obs_step;
 	    
 	this_obs->setRange("range", i_obs, j_obs);
@@ -161,14 +164,14 @@ namespace trkana {
     // Returns the fraction of the true pdf that has smeared out
     double getFracSmeared(const Observable& obs, RooWorkspace* ws) const {
 
-      RooRealVar* this_obs = ws->var(obs.name.c_str());
+      RooRealVar* this_obs = ws->var(obs.getName().c_str());
       RooAbsPdf* truePdf = ws->pdf(name.c_str());
-      RooAbsPdf* resPdf = ws->pdf(obs.resName.c_str());
-      double min_res = obs.res_valid_min; double max_res = obs.res_valid_max;
+      RooAbsPdf* resPdf = ws->pdf(obs.getResName().c_str());
+      double min_res = obs.getResValidMin(); double max_res = obs.getResValidMax();
 
       double result = 0;
-      double min_obs = obs.hist_min; double max_obs = obs.hist_max;
-      double obs_step = obs.hist_bin_width;
+      double min_obs = obs.getHistMin(); double max_obs = obs.getHistMax();
+      double obs_step = obs.getHistBinWidth();
 
       std::cout << "getFracSmeared() might take a while..." << std::endl;
       for (double i_obs = min_obs; i_obs < max_obs; i_obs += obs_step) {
@@ -224,6 +227,9 @@ namespace trkana {
       return result;
     }
 
+    std::string getName() const { return name; }
+
+  private:
     std::string name;
     std::map<ObsName, PdfName> truePdfNames;
     std::map<ObsName, PdfName> effPdfNames;
