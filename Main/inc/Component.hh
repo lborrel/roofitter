@@ -8,64 +8,124 @@
 
 namespace trkana {
 
+  typedef std::string ObsName;
+  typedef std::string PdfName;
+
   struct Component {
 
-    Component(const std::string& comp_name, const mu2e::SimpleConfig& config, RooWorkspace* ws) : name(comp_name), effPdfName(""), resPdfName("") {
+    Component(const std::string& comp_name, const mu2e::SimpleConfig& config, RooWorkspace* ws) : name(comp_name) {
     }
 
-    void constructPdfs(const Observable& obs, const mu2e::SimpleConfig& config, RooWorkspace* ws) {
+    void constructPdfs(const Observables& all_obs, const mu2e::SimpleConfig& config, RooWorkspace* ws) {
       std::stringstream factory_cmd;
 
-      // Construct the true Pdf
-      std::string pdf = config.getString(name+"."+obs.name+".pdf");
+      int i_obs = -1;
+      for (const auto& obs : all_obs) {
+	++i_obs;
+	// Construct the true Pdf
+	std::string pdf = config.getString(name+"."+obs.name+".pdf");
 
-      factory_cmd.str("");
-      factory_cmd << pdf;
-      ws->factory(factory_cmd.str().c_str());
-
-      // Construct the Pdf with Eff, if possible
-      std::string currentPdfSuffix = "";
-      if(!obs.effName.empty()) {
-	std::string this_suffix = "Eff";
-
-	std::string currentPdfName = name + currentPdfSuffix;
-	effPdfName = currentPdfName + this_suffix;
-	    
-	// Construct the Pdfs that include efficiency
-	ws->import(*(new RooEffProd(effPdfName.c_str(), "", *ws->pdf(currentPdfName.c_str()), *ws->function(obs.effName.c_str()))));
-	  
-	currentPdfSuffix += this_suffix;
-      }
-
-      // Construct the smeared pdf
-      if (!obs.resName.empty()) {
-	std::string this_suffix = "Res";
-	std::string currentPdfName = name + currentPdfSuffix;
-	resPdfName = currentPdfName + this_suffix;
 	factory_cmd.str("");
-	factory_cmd << "FCONV::" << resPdfName << "(" << obs.name << ", " << currentPdfName << ", " << obs.resName << ")";
+	factory_cmd << pdf;
 	ws->factory(factory_cmd.str().c_str());
-	
-	((RooFFTConvPdf*) ws->pdf(resPdfName.c_str()))->setBufferFraction(5.0);
 
-	currentPdfSuffix += this_suffix;
+	std::string truePdfName = name+obs.name;
+	truePdfNames.insert(std::pair<ObsName, PdfName>(obs.name, truePdfName));
+	std::string effPdfName = "";
+	std::string resPdfName = "";
+
+	// Construct the Pdf with Eff, if possible
+	std::string currentPdfSuffix = "";
+	if(!obs.effName.empty()) {
+	  std::string this_suffix = "Eff";
+
+	  std::string currentPdfName = truePdfName + currentPdfSuffix;
+	  effPdfName = currentPdfName + this_suffix;
+	  effPdfNames.insert(std::pair<ObsName, PdfName>(obs.name, effPdfName));
+	    
+	  // Construct the Pdfs that include efficiency
+	  ws->import(*(new RooEffProd(effPdfName.c_str(), "", *ws->pdf(currentPdfName.c_str()), *ws->function(obs.effName.c_str()))));
+	  
+	  currentPdfSuffix += this_suffix;
+	}
+
+	// Construct the smeared pdf
+	if (!obs.resName.empty()) {
+	  std::string this_suffix = "Res";
+	  std::string currentPdfName = truePdfName + currentPdfSuffix;
+	  resPdfName = currentPdfName + this_suffix;
+	  resPdfNames.insert(std::pair<ObsName, PdfName>(obs.name, resPdfName));
+	  
+	  factory_cmd.str("");
+	  factory_cmd << "FCONV::" << resPdfName << "(" << obs.name << ", " << currentPdfName << ", " << obs.resName << ")";
+	  ws->factory(factory_cmd.str().c_str());
+	
+	  ((RooFFTConvPdf*) ws->pdf(resPdfName.c_str()))->setBufferFraction(5.0);
+
+	  currentPdfSuffix += this_suffix;
+	}
+
+	// Set any new integrator for all the Pdfs
+	std::string new_integrator = config.getString(name+"."+obs.name+".integrator", "");
+	if (!new_integrator.empty()) {
+	  RooNumIntConfig customConfig(*RooAbsReal::defaultIntegratorConfig());
+	  customConfig.method1D().setLabel(new_integrator.c_str());
+
+	  if(!truePdfName.empty()) {
+	    ws->pdf(truePdfName.c_str())->setIntegratorConfig(customConfig);
+	  }
+	  if(!effPdfName.empty()) {
+	    ws->pdf(effPdfName.c_str())->setIntegratorConfig(customConfig);
+	  }
+	  if(!resPdfName.empty()) {
+	    ws->pdf(resPdfName.c_str())->setIntegratorConfig(customConfig);
+	  }
+	}
       }
 
-      // Set any new integrator for all the Pdfs
-      std::string new_integrator = config.getString(name+"."+obs.name+".integrator", "");
-      if (!new_integrator.empty()) {
-	RooNumIntConfig customConfig(*RooAbsReal::defaultIntegratorConfig());
-	customConfig.method1D().setLabel(new_integrator.c_str());
+      // Now create 2D models from these
+      if (all_obs.size()==2) {
 
-	if(!name.empty()) {
-	  ws->pdf(name.c_str())->setIntegratorConfig(customConfig);
+	std::string xObs = all_obs.at(0).name;
+	std::string xPdf = "";
+ 	if(resPdfNames.find(xObs) != resPdfNames.end()) {
+	  xPdf = resPdfNames.at(xObs);
 	}
-	if(!effPdfName.empty()) {
-	  ws->pdf(effPdfName.c_str())->setIntegratorConfig(customConfig);
+ 	else if(effPdfNames.find(xObs) != effPdfNames.end()) {
+	  xPdf = effPdfNames.at(xObs);
 	}
-	if(!resPdfName.empty()) {
-	  ws->pdf(resPdfName.c_str())->setIntegratorConfig(customConfig);
+ 	else if(truePdfNames.find(xObs) != truePdfNames.end()) {
+	  xPdf = truePdfNames.at(xObs);
 	}
+	else {
+	  throw cet::exception("Component::constructPdfs") << "No valid Pdf name for 2D pdf";
+	}
+
+	std::string yObs = all_obs.at(1).name;
+	std::string yPdf = "";
+ 	if(resPdfNames.find(yObs) != resPdfNames.end()) {
+	  yPdf = resPdfNames.at(yObs);
+	}
+ 	else if(effPdfNames.find(yObs) != effPdfNames.end()) {
+	  yPdf = effPdfNames.at(yObs);
+	}
+ 	else if(truePdfNames.find(yObs) != truePdfNames.end()) {
+	  yPdf = truePdfNames.at(yObs);
+	}
+	else {
+	  throw cet::exception("Component::constructPdfs") << "No valid Pdf name for 2D pdf";
+	}
+
+	factory_cmd.str("");
+	factory_cmd << "PROD::" << name << "2D(" << xPdf << "|" << yObs << "," << yPdf << ")";
+	//	factory_cmd << "PROD::" << name << "2D(" << xPdf << "," << yPdf << ")";
+	std::cout << factory_cmd.str() << std::endl;
+	ws->Print();
+	ws->factory(factory_cmd.str().c_str());
+      }
+      
+      if (all_obs.size()>2) {
+	throw cet::exception("Component::constructPdfs") << "Do not currently support more than two observables";
       }
     }
 
@@ -73,11 +133,7 @@ namespace trkana {
     // (i.e. it is the efficiency 
     double getEffCorrection(const Observable& obs, RooWorkspace* ws) const {
 
-      if (effPdfName.empty()) {
-	throw cet::exception("Component::getEffCorrection") << "Trying to correct for efficiency when effPdfName is empty";
-      }
-
-      RooAbsPdf* this_pdf = ws->pdf(resPdfName.c_str());
+      RooAbsPdf* this_pdf = ws->pdf(resPdfNames.at(obs.name).c_str());
       RooRealVar* this_obs = ws->var(obs.name.c_str());
       RooFormulaVar* effFunc = (RooFormulaVar*) ws->function(obs.effName.c_str());
       TF1* effFn = effFunc->asTF(*this_obs, RooArgList(), RooArgList());
@@ -169,10 +225,11 @@ namespace trkana {
     }
 
     std::string name;
-    std::string effPdfName;
-    std::string resPdfName;
+    std::map<ObsName, PdfName> truePdfNames;
+    std::map<ObsName, PdfName> effPdfNames;
+    std::map<ObsName, PdfName> resPdfNames;
   };
-
+  typedef std::vector<Component> Components;
 }
 
 #endif

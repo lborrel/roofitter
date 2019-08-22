@@ -27,8 +27,6 @@ namespace trkana {
   typedef std::string PdfName;
   typedef std::string Calculation;
 
-  typedef std::vector<Observable> Observables;
-  typedef std::vector<Component> Components;
   typedef std::vector<Calculation> Calculations;
 
   class Analysis {
@@ -58,10 +56,7 @@ namespace trkana {
       for (const auto& i_comp_name : all_comp_names) {
 	Component i_comp(i_comp_name, config, ws);
 
-	// Construct all the Pdfs
-	for (const auto& i_obs : observables) {
-	  i_comp.constructPdfs(i_obs, config, ws);
-	}
+	i_comp.constructPdfs(observables, config, ws);
 
 	components.push_back(i_comp);
       }
@@ -75,16 +70,12 @@ namespace trkana {
       }
 
 
-      for (const auto& i_obs : observables) {
-	// Construct the modelPdf
-	std::string pdf = config.getString(name+".model");
-	factory_cmd.str("");
-	factory_cmd << pdf;
-	ws->factory(factory_cmd.str().c_str());
-	modelPdf = "model";
-
-	ws->var(i_obs.name.c_str())->setRange("fit", i_obs.fit_min, i_obs.fit_max);
-      }
+      // Construct the modelPdf
+      std::string pdf = config.getString(name+".model");
+      factory_cmd.str("");
+      factory_cmd << pdf;
+      ws->factory(factory_cmd.str().c_str());
+      modelPdf = "model";
 
       // Construct all the calculations
       config.getVectorString(name+".calculations", calcs);
@@ -152,7 +143,7 @@ namespace trkana {
       RooAddPdf* full_model = (RooAddPdf*) ws->pdf(modelPdf.c_str());
       size_t i_element = 0;
       for (const auto& i_comp : components) {
-	if (!i_comp.effPdfName.empty()) {
+	//	if (!i_comp.effPdfName.empty()) {
 	  RooRealVar* i_comp_yield = (RooRealVar*) full_model->coefList().at(i_element);
 	  double i_comp_yield_val = i_comp_yield->getVal();
 	  double i_comp_yield_err = i_comp_yield->getPropagatedError(*fitResult);
@@ -169,17 +160,17 @@ namespace trkana {
 
 	  //	  std::cout << "AE: Initial : " << i_comp_yield_val << " +/- " << i_comp_yield_err << std::endl;
 	  //	  std::cout << "AE: --> Corrected : " << i_comp_final_yield_val << " +/- " << i_comp_final_yield_err << std::endl;
-	}
+	  //	}
 
 	// Calculate the fraction of the tru spectrum that has smeared out
-	if(!i_comp.resPdfName.empty()) {
+	  //	if(!i_comp.resPdfName.empty()) {
 
 	  double frac_smeared_away = i_comp.getFracSmeared(observables.at(0), ws); // TODO: handle more than one dimension
 	  std::string frac_smeared_name = i_comp.name + "FracSmeared";
 	  RooRealVar* frac_smeared = new RooRealVar(frac_smeared_name.c_str(), "", frac_smeared_away);
 	  //	  unfold_eff_yield->setError(final_yield_err);
 	  ws->import(*frac_smeared);
-	}
+	  //	}
 	++i_element;
       }
     }

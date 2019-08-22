@@ -27,6 +27,7 @@ namespace trkana {
       // Record the fit region
       fit_min = config.getDouble(name+".fit.min");
       fit_max = config.getDouble(name+".fit.max");
+      ws->var(obs_name.c_str())->setRange("fit", fit_min, fit_max);
 
       // Construct the efficiency pdf for this observable
       if (!effName.empty()) {
@@ -116,6 +117,7 @@ namespace trkana {
     
   };
 
+  typedef std::vector<Observable> Observables;
 }
 
 #endif
