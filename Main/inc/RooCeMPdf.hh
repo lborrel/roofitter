@@ -46,7 +46,8 @@ protected:
   RooRealProxy eMax ;
   RooRealProxy me ;
   RooRealProxy alpha ;
-  
+
+  //TODO: wrap this around a Mu2e utility  
   Double_t evaluate() const {
     double E = std::sqrt(x*x + me*me); // spectrum calculated with total energy, x is momentum
     double result = (1./eMax)*(alpha/(2*M_PI))*(log(4*E*E/me/me)-2.)*((E*E+eMax*eMax)/eMax/(eMax-E));

@@ -6,7 +6,7 @@
 
 #include "Main/inc/Observable.hh"
 
-namespace trkana {
+namespace roofitter {
 
   typedef std::string ObsName;
   typedef std::string PdfName;
@@ -99,7 +99,7 @@ namespace trkana {
 	  xPdf = truePdfNames.at(xObs);
 	}
 	else {
-	  throw cet::exception("Component::constructPdfs") << "No valid Pdf name for 2D pdf";
+	  throw cet::exception("Component::constructPdfs()") << "No valid Pdf name for 2D pdf";
 	}
 
 	std::string yObs = all_obs.at(1).getName();
@@ -114,19 +114,18 @@ namespace trkana {
 	  yPdf = truePdfNames.at(yObs);
 	}
 	else {
-	  throw cet::exception("Component::constructPdfs") << "No valid Pdf name for 2D pdf";
+	  throw cet::exception("Component::constructPdfs()") << "No valid Pdf name for 2D pdf";
 	}
 
 	factory_cmd.str("");
 	factory_cmd << "PROD::" << name << "2D(" << xPdf << "|" << yObs << "," << yPdf << ")";
 	//	factory_cmd << "PROD::" << name << "2D(" << xPdf << "," << yPdf << ")";
-	std::cout << factory_cmd.str() << std::endl;
-	ws->Print();
+	//	std::cout << factory_cmd.str() << std::endl;
 	ws->factory(factory_cmd.str().c_str());
       }
       
       if (all_obs.size()>2) {
-	throw cet::exception("Component::constructPdfs") << "Do not currently support more than two observables";
+	throw cet::exception("Component::constructPdfs()") << "Do not currently support more than two observables";
       }
     }
 

@@ -22,7 +22,7 @@
 #include "Main/inc/Observable.hh"
 #include "Main/inc/Component.hh"
 
-namespace trkana {
+namespace roofitter {
 
   typedef std::string PdfName;
   typedef std::string Calculation;
@@ -39,7 +39,7 @@ namespace trkana {
       std::vector<std::string> all_obs_names;
       config.getVectorString(name+".observables", all_obs_names);
       if (all_obs_names.size()>2) {
-	throw cet::exception("trkana::Analysis") << "More than 2 observables is not currently supported";
+	throw cet::exception("Analysis::Analysis()") << "More than 2 observables is not currently supported";
       }
 
       // Construct all the observables
@@ -123,7 +123,7 @@ namespace trkana {
 	draw = y_leaf+":"+x_leaf;
       }
       else {
-	throw cet::exception("trkana::Analysis") << "Can't create histogram with more than two axes";
+	throw cet::exception("Analysis::fillData()") << "Can't create histogram with more than two axes";
       }
       draw += ">>";
       draw += hist->GetName();
@@ -142,7 +142,7 @@ namespace trkana {
       int status = fitResult->status();
       if (status>0) {
 	if (!allow_failure) {
-	  throw cet::exception("Analysis::fitTo") << "Fit failed! If you want trkana to continue and not thorw this exception then set " << name << ".allow_failure = true; in your cfg file";
+	  throw cet::exception("Analysis::fitTo()") << "Fit failed! If you want roofitter to continue and not throw this exception then set " << name << ".allow_failure = true; in your cfg file";
 	}
       }
     }

@@ -52,6 +52,7 @@ protected:
   RooRealProxy c7 ;
   RooRealProxy c8 ;
   
+  //TODO: wrap this around a Mu2e utility
   Double_t evaluate() const {
     // For Al
     //    double muon_mass = 105.65837;

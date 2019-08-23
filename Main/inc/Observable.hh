@@ -4,7 +4,7 @@
 #include "RooWorkspace.h"
 #include "ConfigTools/inc/SimpleConfig.hh"
 
-namespace trkana {
+namespace roofitter {
 
   class Observable {
 
@@ -57,7 +57,7 @@ namespace trkana {
 	  ws->import(*( new RooFormulaVar(effName.c_str(), eff_func.c_str(), list)));
 	}
 	else {
-	  throw cet::exception("Observable") << "Unsupported efficiency type: " << eff_type;
+	  throw cet::exception("Observable::Observable()") << "Unsupported efficiency type: " << eff_type;
 	}
       }
 
@@ -94,7 +94,7 @@ namespace trkana {
 	}
 	*/
 	else {
-	  throw cet::exception("Observable") << "Unsupported resolution type: " << res_type;
+	  throw cet::exception("Observable::Observable()") << "Unsupported resolution type: " << res_type;
 	}
       }
     }

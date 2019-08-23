@@ -75,7 +75,7 @@ helper.make_plugins( [ mainlib,
                        'hep_concurrency',
                        ] )
 
-helper.make_bin(target = 'trkana', userlibs = [mainlib,
+helper.make_bin(target = 'roofitter', userlibs = [mainlib,
                                                        rootlibs,
                                                        extrarootlibs,
                                                        'mu2e_ConfigTools',

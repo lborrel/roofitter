@@ -14,7 +14,7 @@
 
 #include "Main/inc/Analysis.hh"
 
-namespace trkana {
+namespace roofitter {
 
   struct InputArgs {
     InputArgs() : cfg_filename(""), need_help(false), debug_cfg(false), debug_cfg_filename("") { }
@@ -89,13 +89,13 @@ namespace trkana {
     std::string filename = config.getString("input.filename");
     TFile* file = new TFile(filename.c_str(), "READ");
     if (file->IsZombie()) {
-      throw cet::exception("trkana::main") << "Input file " << filename << " is a zombie";
+      throw cet::exception("roofitter::main") << "Input file " << filename << " is a zombie";
     }
 
     std::string treename = config.getString("input.treename");
-    TTree* trkana = (TTree*) file->Get(treename.c_str());
-    if (!trkana) {
-      throw cet::exception("trkana::main") << "Input tree " << treename << " is not in file";
+    TTree* tree = (TTree*) file->Get(treename.c_str());
+    if (!tree) {
+      throw cet::exception("roofitter::main") << "Input tree " << treename << " is not in file";
     }
 
     std::vector<Analysis> analyses;
@@ -106,7 +106,7 @@ namespace trkana {
     }
 
     for (auto& i_ana : analyses) {
-      i_ana.fillData(trkana);
+      i_ana.fillData(tree);
       i_ana.fit();
       if (config.getBool(i_ana.name+".unfold", false)) {
 	i_ana.unfold();
@@ -132,6 +132,6 @@ namespace trkana {
 
 int main(int argc, char **argv) {
 
-  trkana::main(argc, argv);
+  roofitter::main(argc, argv);
   return 0;
 }
