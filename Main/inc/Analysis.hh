@@ -78,7 +78,7 @@ namespace roofitter {
       modelPdf = "model";
 
       // Construct all the calculations
-      config.getVectorString(name+".calculations", calcs);
+      config.getVectorString(name+".calculations", calcs, std::vector<std::string>()); // default is an empty string
 
       allow_failure = config.getBool(name+".allow_failure", false);
     }
