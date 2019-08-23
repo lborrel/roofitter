@@ -79,6 +79,8 @@ namespace trkana {
 
       // Construct all the calculations
       config.getVectorString(name+".calculations", calcs);
+
+      allow_failure = config.getBool(name+".allow_failure", false);
     }
 
     TCut cutcmd() { 
@@ -134,7 +136,15 @@ namespace trkana {
 
     void fit() {
       RooAbsData* data = ws->data("data");
-      fitResult = ws->pdf(modelPdf.c_str())->fitTo(*data, RooFit::Save(), RooFit::Range("fit"));
+      fitResult = ws->pdf(modelPdf.c_str())->fitTo(*data, RooFit::Save(), RooFit::Range("fit"), RooFit::Extended(true));
+      //      fitResult->printValue(std::cout);
+
+      int status = fitResult->status();
+      if (status>0) {
+	if (!allow_failure) {
+	  throw cet::exception("Analysis::fitTo") << "Fit failed! If you want trkana to continue and not thorw this exception then set " << name << ".allow_failure = true; in your cfg file";
+	}
+      }
     }
 
     void unfold() {
@@ -203,6 +213,8 @@ namespace trkana {
     Components components;
     Calculations calcs;
     RooFitResult* fitResult;
+
+    bool allow_failure;
   };
 }
 
