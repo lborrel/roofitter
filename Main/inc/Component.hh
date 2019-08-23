@@ -164,8 +164,17 @@ namespace roofitter {
     double getFracSmeared(const Observable& obs, RooWorkspace* ws) const {
 
       RooRealVar* this_obs = ws->var(obs.getName().c_str());
-      RooAbsPdf* truePdf = ws->pdf(name.c_str());
+      if (!this_obs) {
+	throw cet::exception("Component::getFracSmeared") << "Could not find observable \"" << obs.getName() << "\" in RooWorkspace";
+      }
+      RooAbsPdf* truePdf = ws->pdf(truePdfNames.at(obs.getName()).c_str());
+      if (!truePdf) {
+	throw cet::exception("Component::getFracSmeared") << "Could not find truePdf \"" << name << "\" in RooWorkspace";
+      }
       RooAbsPdf* resPdf = ws->pdf(obs.getResName().c_str());
+      if (!resPdf) {
+	throw cet::exception("Component::getFracSmeared") << "Could not find resPdf \"" << obs.getResName() << "\" in RooWorkspace";
+      }
       double min_res = obs.getResValidMin(); double max_res = obs.getResValidMax();
 
       double result = 0;
