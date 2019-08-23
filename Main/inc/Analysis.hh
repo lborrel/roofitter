@@ -66,7 +66,17 @@ namespace roofitter {
       std::vector<std::string> all_cuts;
       config.getVectorString(name+".cuts", all_cuts);
       for (const auto& i_cut : all_cuts) {
-	cuts.push_back(TCut(config.getString("cut."+i_cut).c_str()));
+	std::string cutname = i_cut;
+	bool notted = false;
+	if (i_cut.at(0) == '!') { // if the user has not-ed this cut for the analysis
+	  notted = true;
+	  cutname = cutname.substr(1, cutname.size()-1);
+	}
+	std::string cut = config.getString("cut."+cutname);
+	if (notted) {
+	  cut = "!" + cut;
+	}
+	cuts.push_back(TCut(cut.c_str()));
       }
 
 
@@ -136,7 +146,11 @@ namespace roofitter {
 
     void fit() {
       RooAbsData* data = ws->data("data");
-      fitResult = ws->pdf(modelPdf.c_str())->fitTo(*data, RooFit::Save(), RooFit::Range("fit"), RooFit::Extended(true));
+      RooAbsPdf* model = ws->pdf(modelPdf.c_str());
+      if (!model) {
+	throw cet::exception("Analysis::fit()") << "Can't find model \"" << modelPdf << "\" in RooWorkspace";
+      }
+      fitResult = model->fitTo(*data, RooFit::Save(), RooFit::Range("fit"), RooFit::Extended(true));
       //      fitResult->printValue(std::cout);
 
       int status = fitResult->status();
