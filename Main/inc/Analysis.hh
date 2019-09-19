@@ -151,7 +151,7 @@ namespace roofitter {
 	throw cet::exception("Analysis::fit()") << "Can't find model \"" << modelPdf << "\" in RooWorkspace";
       }
       fitResult = model->fitTo(*data, RooFit::Save(), RooFit::Range("fit"), RooFit::Extended(true));
-      //      fitResult->printValue(std::cout);
+      fitResult->printValue(std::cout);
 
       int status = fitResult->status();
       if (status>0) {
