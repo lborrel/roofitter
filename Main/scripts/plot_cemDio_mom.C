@@ -1,6 +1,5 @@
-void plot_cemDio_mom() {
+void plot_cemDio_mom(std::string filename) {
 
-  std::string filename = "ana-run7.root";
   TFile* file = new TFile(filename.c_str(), "READ");
   
   RooWorkspace* ws = (RooWorkspace*) file->Get("cemDio_mom/cemDio_mom");
