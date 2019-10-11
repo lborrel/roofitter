@@ -8,6 +8,7 @@ To download a version:
 ## Setup
 To setup (on a mu2egpvm machine):
 > setup mu2e
+
 > source setup.sh
 
 If not working on a mu2egpvm machine, you will need to be able to see Mu2e Offline releases on cvmfs and do your equivalent of "setup mu2e"
