@@ -1,11 +1,16 @@
 # roofitter
 This program runs RooFit on a TTree. The user can define cuts, observables and pdfs for their analysis with a SimpleConfig file.
 
+## Clone the Repository
+To download a version:
+> git clone https://github.com/AndrewEdmonds11/roofitter.git
+
 ## Setup
-To setup:
+To setup (on a mu2egpvm machine):
+> setup mu2e
 > source setup.sh
 
-Note that you will need to be able to see Mu2e Offline releases on cvmfs
+If not working on a mu2egpvm machine, you will need to be able to see Mu2e Offline releases on cvmfs and do your equivalent of "setup mu2e"
 
 ## Compilation
 To compile:
