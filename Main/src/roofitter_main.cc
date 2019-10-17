@@ -10,8 +10,10 @@
 #include "fhiclcpp/parse.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "fhiclcpp/make_ParameterSet.h"
+
 #include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/types/Table.h"
+#include "fhiclcpp/types/Sequence.h"
 
 #include "cetlib/filepath_maker.h"
 
@@ -38,17 +40,22 @@ namespace roofitter {
   };
 
   struct InputConfig {
-    fhicl::Atom<std::string> filename{fhicl::Name("filename"), fhicl::Comment("Input file name"), ""};
-    fhicl::Atom<std::string> treename{fhicl::Name("treename"), fhicl::Comment("Input tree name"), ""};
+    fhicl::Atom<std::string> filename{fhicl::Name("filename"), fhicl::Comment("Input file name")};
+    fhicl::Atom<std::string> treename{fhicl::Name("treename"), fhicl::Comment("Input tree name")};
   };
 
   struct OutputConfig {
-    fhicl::Atom<std::string> filename{fhicl::Name("filename"), fhicl::Comment("Output file name"), ""};
+    fhicl::Atom<std::string> filename{fhicl::Name("filename"), fhicl::Comment("Output file name")};
+  };
+
+  struct AnalysisConfig {
+    fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Analysis name")};
   };
 
   struct Config {
     fhicl::Table<InputConfig> input{fhicl::Name("input"), fhicl::Comment("Configuration of input file")};
     fhicl::Table<OutputConfig> output{fhicl::Name("output"), fhicl::Comment("Configuration of output file")};
+    fhicl::Sequence< fhicl::Table<AnalysisConfig> > analyses{fhicl::Name("analyses"), fhicl::Comment("List of analyses")};
   };
 
 
@@ -179,23 +186,17 @@ namespace roofitter {
       throw cet::exception("roofitter::main") << "Input tree " << treename << " is not in file";
     }
 
-    /*
-    std::vector<Analysis> analyses;
-    std::vector<std::string> ana_names;
-    config.getVectorString("analyses", ana_names);
-    for (const auto& i_ana_name : ana_names) {
-      analyses.push_back(Analysis(i_ana_name, config));
-    }
-
+    std::vector<AnalysisConfig> analyses = config().analyses();
     for (auto& i_ana : analyses) {
-      i_ana.fillData(tree);
-      i_ana.fit();
-      if (config.getBool(i_ana.name+".unfold", false)) {
-	i_ana.unfold();
-      }
-      i_ana.calculate();
+      std::cout << i_ana.name() << std::endl;
+	//      i_ana.fillData(tree);
+	//      i_ana.fit();
+	//      if (config.getBool(i_ana.name+".unfold", false)) {
+	//	i_ana.unfold();
+	//      }
+	//      i_ana.calculate();
     }
-    */
+    
     std::string outfilename = config().output().filename();
     if (!args.output_filename.empty()) { // override cfg file with
       outfilename = args.output_filename;

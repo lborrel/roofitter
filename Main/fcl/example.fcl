@@ -7,10 +7,10 @@
 //#include "Main/cfg/observables/leaves_trkana.cfg"
 
 # This is the analysis we want to include
-//#include "Main/cfg/analyses/cemDio_mom.cfg"
+#include "Main/fcl/ana_cemDio_mom.fcl"
 
 # Can do more than one analysis in a single run
-//vector<string> analyses = {"cemDio_mom"};
+analyses : [ @local::cemDio_mom ]
 
 # Can define input and output files here or with command line arguments
 input : {
