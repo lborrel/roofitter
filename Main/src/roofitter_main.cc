@@ -6,6 +6,13 @@
 
 #include "cetlib_except/exception.h"
 
+#include "fhiclcpp/intermediate_table.h"
+#include "fhiclcpp/parse.h"
+#include "fhiclcpp/ParameterSet.h"
+#include "fhiclcpp/make_ParameterSet.h"
+
+#include "cetlib/filepath_maker.h"
+
 #include "TCanvas.h"
 #include "TFile.h"
 #include "TTree.h"
@@ -97,6 +104,22 @@ namespace roofitter {
       PrintHelp();
       return 0;
     }
+
+    // This defines the path to be used to resolve fcl #include directives
+    // The argument is the name of an environment variable
+    // This policy says that the the top level file may be in the local directory,
+    // but all other #include files must be relative to the path defined in the env variable.
+    // There are other policy choices that will exclude the local directory for the top file.
+    cet::filepath_lookup_after1 policy("FHICL_FILE_PATH");
+
+    // This is boilerplate: you need to make an intermediate object
+    // The intermediate object is editable; this is how art adds the command line arguments as overrides
+    fhicl::intermediate_table tbl;
+    fhicl::parse_document(args.cfg_filename, policy, tbl);
+
+    // Then turn that object into a fhicl table:
+    fhicl::ParameterSet pset;
+    fhicl::make_ParameterSet(tbl, pset);
 
     mu2e::SimpleConfig config(args.cfg_filename);
     if (args.debug_cfg) {

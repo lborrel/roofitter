@@ -76,10 +76,12 @@ helper.make_plugins( [ mainlib,
                        ] )
 
 helper.make_bin(target = 'roofitter', userlibs = [mainlib,
-                                                       rootlibs,
-                                                       extrarootlibs,
-                                                       'mu2e_ConfigTools',
-                                                       'cetlib_except'])
+                                                  rootlibs,
+                                                  extrarootlibs,
+                                                  'mu2e_ConfigTools',
+                                                  'cetlib',
+                                                  'cetlib_except',
+                                                  'fhiclcpp'])
 #env.Program('Main_main.cc')
 # this tells emacs to view this file in python mode.
 # Local Variables:
