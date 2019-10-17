@@ -1,0 +1,29 @@
+////////////////////////////////////
+// An example fcl file that you can run
+// on a trkana tree
+
+# Get cut and leaf definitions for the trkana tree
+//#include "Main/cfg/cuts/cd3_trkana.cfg"
+//#include "Main/cfg/observables/leaves_trkana.cfg"
+
+# This is the analysis we want to include
+//#include "Main/cfg/analyses/cemDio_mom.cfg"
+
+# Can do more than one analysis in a single run
+//vector<string> analyses = {"cemDio_mom"};
+
+# Can define input and output files here or with command line arguments
+input : {
+    filename : ""
+    treename : ""
+}
+
+output : {
+    filename : ""
+}
+
+//
+// This tells emacs to view this file in fcl mode.
+// Local Variables:
+// mode:tcl
+// End:

@@ -10,6 +10,8 @@
 #include "fhiclcpp/parse.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "fhiclcpp/make_ParameterSet.h"
+#include "fhiclcpp/types/Atom.h"
+#include "fhiclcpp/types/Table.h"
 
 #include "cetlib/filepath_maker.h"
 
@@ -34,6 +36,29 @@ namespace roofitter {
     std::string input_treename;
     std::string output_filename;
   };
+
+  struct InputConfig {
+    fhicl::Atom<std::string> filename{fhicl::Name("filename"), fhicl::Comment("Input file name"), ""};
+    fhicl::Atom<std::string> treename{fhicl::Name("treename"), fhicl::Comment("Input tree name"), ""};
+  };
+
+  struct OutputConfig {
+    fhicl::Atom<std::string> filename{fhicl::Name("filename"), fhicl::Comment("Output file name"), ""};
+  };
+
+  struct Config {
+    fhicl::Table<InputConfig> input{fhicl::Name("input"), fhicl::Comment("Configuration of input file")};
+    fhicl::Table<OutputConfig> output{fhicl::Name("output"), fhicl::Comment("Configuration of output file")};
+  };
+
+
+  fhicl::Table<Config> retrieveConfiguration( fhicl::ParameterSet const & pset ) {
+    std::set<std::string> ignorable_keys {}; // keys that should be ignored by the validation system (can be empty)
+    
+    fhicl::Table<Config> const result { pset, ignorable_keys }; // performs validation and value setting
+    
+    return result;
+  }
 
   void PrintHelp() {
     std::cout << "Input Arguments:" << std::endl;
@@ -121,16 +146,16 @@ namespace roofitter {
     fhicl::ParameterSet pset;
     fhicl::make_ParameterSet(tbl, pset);
 
-    mu2e::SimpleConfig config(args.cfg_filename);
-    if (args.debug_cfg) {
+    auto config = retrieveConfiguration(pset);
+    /*    if (args.debug_cfg) {
       std::ofstream fileout(args.debug_cfg_filename);
       config.print(fileout);
       std::cout << "Config written to " << args.debug_cfg_filename << std::endl;
       return 0;
-    }
+      }*/
 
 
-    std::string filename = config.getString("input.filename", "");
+    std::string filename = config().input().filename();
     if (!args.input_filename.empty()) { // override cfg file with
       filename = args.input_filename;
     }
@@ -139,10 +164,10 @@ namespace roofitter {
     }
     TFile* file = new TFile(filename.c_str(), "READ");
     if (file->IsZombie()) {
-      throw cet::exception("roofitter::main") << "Input file " << filename << " is a zombie";
+      throw cet::exception("roofitter::main()") << "Input file " << filename << " is a zombie";
     }
 
-    std::string treename = config.getString("input.treename", "");
+    std::string treename = config().input().treename();
     if (!args.input_treename.empty()) { // override cfg tree with
       treename = args.input_treename;
     }
@@ -154,6 +179,7 @@ namespace roofitter {
       throw cet::exception("roofitter::main") << "Input tree " << treename << " is not in file";
     }
 
+    /*
     std::vector<Analysis> analyses;
     std::vector<std::string> ana_names;
     config.getVectorString("analyses", ana_names);
@@ -169,8 +195,8 @@ namespace roofitter {
       }
       i_ana.calculate();
     }
-
-    std::string outfilename = config.getString("output.filename", "");
+    */
+    std::string outfilename = config().output().filename();
     if (!args.output_filename.empty()) { // override cfg file with
       outfilename = args.output_filename;
     }
@@ -178,15 +204,15 @@ namespace roofitter {
       throw cet::exception("roofitter::main()") << "No outfilename specified";
     }
     TFile* outfile = new TFile(outfilename.c_str(), "RECREATE");
-    for (auto& i_ana : analyses) {
-      TDirectory* outdir = outfile->mkdir(i_ana.name.c_str());
-      outdir->cd();
-      i_ana.Write();
-      outfile->cd();
-    }
+    //    for (auto& i_ana : analyses) {
+    //      TDirectory* outdir = outfile->mkdir(i_ana.name.c_str());
+    //      outdir->cd();
+    //      i_ana.Write();
+    //      outfile->cd();
+    //    }
     outfile->Write();
     outfile->Close();
-
+    
     std::cout << "Done" << std::endl;
     return 0;
   }
