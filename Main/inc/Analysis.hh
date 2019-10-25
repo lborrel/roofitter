@@ -29,8 +29,33 @@ namespace roofitter {
 
   typedef std::vector<Calculation> Calculations;
 
+  struct AnalysisConfig {
+    fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Analysis name")};
+    fhicl::Sequence< fhicl::Table<ObservableConfig> > observables{fhicl::Name("observables"), fhicl::Comment("List of observables")};
+  };
+
   class Analysis {
+  private:
+    AnalysisConfig _conf;
+    RooWorkspace* _ws;
+
+    Observables _observables;
+
   public:
+    Analysis(const AnalysisConfig& cfg) : 
+      _conf(cfg),
+      _ws(new RooWorkspace(_conf.name().c_str(), true))
+    {
+      std::cout << _conf.name() << std::endl;
+      if (_conf.observables().size() > 2) {
+	throw cet::exception("Analysis Constructor") << "More than 2 observables is not currently supported";
+      }
+      for (const auto& i_obs_cfg : _conf.observables()) {
+	Observable i_obs(i_obs_cfg, _ws);
+	_observables.push_back(i_obs);
+      }
+    }
+
     Analysis(std::string name, const mu2e::SimpleConfig& config) : 
       name(name),
       ws(new RooWorkspace(name.c_str(), true))
@@ -209,12 +234,12 @@ namespace roofitter {
     }
 
     void Write() {
-      hist->Write();
+      //      hist->Write();
       
-      fitResult->Write();
+      //      fitResult->Write();
 
-      ws->Print();
-      ws->Write();
+      _ws->Print();
+      //      ws->Write();
     }
 
     std::string name;

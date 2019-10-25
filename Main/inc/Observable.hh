@@ -3,12 +3,85 @@
 
 #include "RooWorkspace.h"
 #include "ConfigTools/inc/SimpleConfig.hh"
+#include "fhiclcpp/types/OptionalAtom.h"
+#include "fhiclcpp/types/OptionalTable.h"
 
 namespace roofitter {
+  struct ParameterConfig {
+    fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Parameter name")};
+    fhicl::OptionalAtom<double> value{fhicl::Name("value"), fhicl::Comment("Parameter value")};
+    fhicl::OptionalAtom<double> minValue{fhicl::Name("minValue"), fhicl::Comment("Minimum parameter value")};
+    fhicl::OptionalAtom<double> maxValue{fhicl::Name("maxValue"), fhicl::Comment("Maximum parameter value")};
+  };
 
+  struct FunctionConfig {
+    fhicl::Atom<std::string> formula{fhicl::Name("formula"), fhicl::Comment("Formula string")};
+    fhicl::Sequence< fhicl::Table<ParameterConfig> > parameters{fhicl::Name("parameters"), fhicl::Comment("List of parameters that appear in the formula with values and value ranges")};
+  };
+  struct EffModelConfig {
+    fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Efficiency model name")};
+    fhicl::OptionalTable<FunctionConfig> func{fhicl::Name("func"), fhicl::Comment("Configuration for the function for the efficiency model")};
+  };
+
+  struct ObservableConfig {
+    fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Observable name")};
+    fhicl::Atom<double> min{fhicl::Name("min"), fhicl::Comment("Minimum value of observable")};
+    fhicl::Atom<double> max{fhicl::Name("max"), fhicl::Comment("Maximum value of observable")};
+    fhicl::OptionalTable<EffModelConfig> efficiencyModel{fhicl::Name("efficiencyModel"), fhicl::Comment("Efficiency model config for this observable")};
+  };
+  
   class Observable {
+  private: 
+    ObservableConfig _obsConf;
+    EffModelConfig _effModelConf;
 
   public:
+    Observable (const ObservableConfig& cfg, RooWorkspace* ws) : _obsConf(cfg) {
+      std::stringstream factory_cmd;
+
+      std::cout << _obsConf.name() << std::endl;
+
+      factory_cmd.str("");
+      factory_cmd << _obsConf.name() << "[" << _obsConf.min() << ", " << _obsConf.max() << "]";
+      ws->factory(factory_cmd.str().c_str());      
+
+      // Construct the efficiency pdf for this observable
+      if (_obsConf.efficiencyModel(_effModelConf)) {
+	std::cout << _effModelConf.name() << std::endl;
+	FunctionConfig funcConf;
+	if (_effModelConf.func(funcConf)) {
+	  RooArgList list; // need to keep track of all vars that go into the function
+	  list.add(*ws->var(_obsConf.name().c_str())); // add the observable
+
+	  // Create all the other parameters
+	  for (const auto& i_param_cfg : funcConf.parameters()) {
+	    factory_cmd.str("");
+	    factory_cmd << i_param_cfg.name() << "[";
+
+	    double val;
+	    if (i_param_cfg.value(val)) {
+	      factory_cmd << val;
+	    }
+	    double min_val, max_val;
+	    if (i_param_cfg.minValue(min_val) && i_param_cfg.maxValue(max_val)) {
+	      if (i_param_cfg.value(val)) { // there was an initial value specified
+		factory_cmd << ", ";
+	      }
+	      factory_cmd << min_val << ", " << max_val;
+	    }
+	    factory_cmd << "]";
+	    //	    std::cout << factory_cmd.str() << std::endl;
+	    ws->factory(factory_cmd.str().c_str());
+	    
+	    list.add(*ws->var(i_param_cfg.name().c_str()));
+	  }
+
+	  // Create the function itself
+	  ws->import(*( new RooFormulaVar(_effModelConf.name().c_str(), funcConf.formula().c_str(), list)));
+	}
+      }
+    }
+
     Observable(const std::string& obs_name, const std::string& eff_name, const std::string& res_name, const mu2e::SimpleConfig& config, RooWorkspace* ws) : name(obs_name), effName(eff_name), resName(res_name) {
 
       std::stringstream factory_cmd;

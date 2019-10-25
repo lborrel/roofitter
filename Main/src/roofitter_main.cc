@@ -48,15 +48,6 @@ namespace roofitter {
     fhicl::Atom<std::string> filename{fhicl::Name("filename"), fhicl::Comment("Output file name")};
   };
 
-  struct ObservableConfig {
-    fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Observable name")};
-  };
-
-  struct AnalysisConfig {
-    fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Analysis name")};
-    fhicl::Sequence< fhicl::Table<ObservableConfig> > observables{fhicl::Name("observables"), fhicl::Comment("List of observables")};
-  };
-
   struct Config {
     fhicl::Table<InputConfig> input{fhicl::Name("input"), fhicl::Comment("Configuration of input file")};
     fhicl::Table<OutputConfig> output{fhicl::Name("output"), fhicl::Comment("Configuration of output file")};
@@ -191,18 +182,17 @@ namespace roofitter {
       throw cet::exception("roofitter::main") << "Input tree " << treename << " is not in file";
     }
 
-    std::vector<AnalysisConfig> analyses = config().analyses();
-    for (auto& i_ana : analyses) {
-      std::cout << i_ana.name() << std::endl;
-      for (const auto& i_obs : i_ana.observables()) {
-	std::cout << i_obs.name() << std::endl;
-      }
+    std::vector<AnalysisConfig> analysis_cfgs = config().analyses();
+    std::vector<Analysis> analyses;
+    for (auto& i_ana_cfg : analysis_cfgs) {
+      Analysis i_ana(i_ana_cfg);
 	//      i_ana.fillData(tree);
 	//      i_ana.fit();
 	//      if (config.getBool(i_ana.name+".unfold", false)) {
 	//	i_ana.unfold();
 	//      }
 	//      i_ana.calculate();
+      analyses.push_back(i_ana);
     }
     
     std::string outfilename = config().output().filename();
@@ -213,12 +203,12 @@ namespace roofitter {
       throw cet::exception("roofitter::main()") << "No outfilename specified";
     }
     TFile* outfile = new TFile(outfilename.c_str(), "RECREATE");
-    //    for (auto& i_ana : analyses) {
-    //      TDirectory* outdir = outfile->mkdir(i_ana.name.c_str());
-    //      outdir->cd();
-    //      i_ana.Write();
+    for (auto& i_ana : analyses) {
+      //      TDirectory* outdir = outfile->mkdir(i_ana.name.c_str());
+      //      outdir->cd();
+      i_ana.Write();
     //      outfile->cd();
-    //    }
+    }
     outfile->Write();
     outfile->Close();
     

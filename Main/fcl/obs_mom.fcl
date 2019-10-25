@@ -1,24 +1,26 @@
 BEGIN_PROLOG
 
+erf_tq08 : {
+    name :"erf_tq08"
+    func : {
+	formula : "(TMath::Erf((mom-thresh)*slope)+1)*0.5*maxEff"
+	parameters : [ { name : "thresh" value : 91.7 }, 
+		       { name : "slope" value : 0.091}, 
+		       { name : "maxEff" value : 0.154}]
+    }
+}
+
+
 mom : {
     name : "mom"
+    min : 95
+    max : 115
     # Histogram Limits
 #    hist : { min : 95 max : 115	bin_width : 0.25 }
     #Fit Limits
 #    fit : { min : 95 max : 115 }
 
-    # Efficiency Models
-    # Erf function with TrkQual>0.8 cut
-#    erf_tq08 : {
-#	func : {
-#	    parameters : { 
-#		thresh : 91.7
-#		slope : 0.091
-#		maxEff : 0.154
-#	    }
-#	    formula : "(TMath::Erf((mom-thresh)*slope)+1)*0.5*maxEff";
-#	}
-#    }
+    efficiencyModel : @local::erf_tq08
 
     # Resolution models
     # Double-sided crystal ball with TrkQual>0.8
