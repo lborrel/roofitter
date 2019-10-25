@@ -13,7 +13,11 @@ namespace roofitter {
 
   struct PdfConfig {
     fhicl::Atom<std::string> obsName{fhicl::Name("obsName"), fhicl::Comment("Name of the observable that this PDF is for")};
+    fhicl::Atom<std::string> pdfName{fhicl::Name("pdfName"), fhicl::Comment("Name of this PDF")};
     fhicl::Atom<std::string> pdf{fhicl::Name("pdf"), fhicl::Comment("PDF function in RooFit factory format")};
+
+    fhicl::Atom<bool> incEffModel{fhicl::Name("incEffModel"), fhicl::Comment("True/false whether to include the efficiency model"), false};
+    fhicl::Atom<std::string> effPdfName{fhicl::Name("effPdfName"), fhicl::Comment("Name to use for the PDF with efficiency model"), ""};
   };
 
   struct ComponentConfig {
@@ -26,20 +30,38 @@ namespace roofitter {
     ComponentConfig _compConf;
 
   public:
-    Component (const ComponentConfig& cfg, RooWorkspace* ws) : _compConf(cfg) {
+    Component (const ComponentConfig& cfg, RooWorkspace* ws, const Observables& observables) : _compConf(cfg) {
       std::stringstream factory_cmd;
 
       for (const auto& i_pdf_cfg : _compConf.pdfs()) {
 	std::string i_obs_name = i_pdf_cfg.obsName();
-	// See if the observable has been created
-	if (!ws->var(i_obs_name.c_str())) {
-	  throw cet::exception("Component Constructor") << "Observable " << i_obs_name << " has not been created";
-	}
+
+	for (const auto& i_obs : observables) {
+	  const auto& i_obs_cfg = i_obs.getConf();
+	  
+	  if (i_obs_name != i_obs_cfg.name()) {
+	    throw cet::exception("Component Constructor") << "Observable " << i_obs_name << " has not been created";
+	  }
 	
-	std::string pdf = i_pdf_cfg.pdf();
-	factory_cmd.str("");
-	factory_cmd << pdf;
-	ws->factory(factory_cmd.str().c_str());
+	  // Construct the true pdf
+	  std::string pdf = i_pdf_cfg.pdf();
+	  factory_cmd.str("");
+	  factory_cmd << pdf;
+	  ws->factory(factory_cmd.str().c_str());
+
+	  // Create a PDF with the efficiency model, if requested
+	  EffModelConfig i_eff_cfg;
+	  if (i_pdf_cfg.incEffModel() && i_obs_cfg.efficiencyModel(i_eff_cfg)) {
+	    
+	    FunctionConfig i_eff_func_cfg;
+	    if (i_eff_cfg.func(i_eff_func_cfg)) {
+	      ws->import(*(new RooEffProd(i_pdf_cfg.effPdfName().c_str(), "", *ws->pdf(i_pdf_cfg.pdfName().c_str()), *ws->function(i_eff_cfg.name().c_str()))));
+	    }
+	    else {
+	      throw cet::exception("Component Constructor") << "No function for efficiency model" << std::endl;
+	    }
+	  }
+	}
       }
     }
 

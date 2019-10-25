@@ -63,7 +63,7 @@ namespace roofitter {
 
       // Construct the components
       for (const auto& i_comp_cfg : _anaConf.components()) {
-	Component i_comp(i_comp_cfg, _ws);
+	Component i_comp(i_comp_cfg, _ws, _observables);
 
 	//	i_comp.constructPdfs(observables, config, ws);
 
