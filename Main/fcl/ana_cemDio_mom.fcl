@@ -14,9 +14,11 @@ cemDio_mom : {
     observables : [ @local::mom ]
     components : [ @local::cemLL, @local::dioPol58 ]
     cuts : @local::AllCD3Cuts
+    model : {
+	name: "model"
+	formula : "SUM::model(NCe[0, 200]*cemLLmomEffResp, NDio[0,20000]*dioPol58momEffResp)"
+    }
 }
-
-#string cemDio_mom.model = "SUM::model(NCe[0, 200]*cemLLmomEffRes, NDio[0,20000]*dioPol58momEffRes)";
 
 END_PROLOG
 //

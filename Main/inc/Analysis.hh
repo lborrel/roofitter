@@ -41,6 +41,7 @@ namespace roofitter {
     fhicl::Sequence< fhicl::Table<ObservableConfig> > observables{fhicl::Name("observables"), fhicl::Comment("List of observables")};
     fhicl::Sequence< fhicl::Table<ComponentConfig> > components{fhicl::Name("components"), fhicl::Comment("List of components")};
     fhicl::Sequence< fhicl::Table<CutConfig> > cuts{fhicl::Name("cuts"), fhicl::Comment("List of cuts to apply")};
+    fhicl::Table<PdfConfig> model{fhicl::Name("model"), fhicl::Comment("The PDF for the full final model to fit")};
   };
 
   class Analysis {
@@ -74,6 +75,12 @@ namespace roofitter {
 	Component i_comp(i_comp_cfg, _ws, _observables);
 	_components.push_back(i_comp);
       }
+
+      // Construct the final model
+      std::stringstream factory_cmd;
+      factory_cmd.str("");
+      factory_cmd << _anaConf.model().formula();
+      _ws->factory(factory_cmd.str().c_str());
     }
 
     Analysis(std::string name, const mu2e::SimpleConfig& config) : 
@@ -141,7 +148,6 @@ namespace roofitter {
     TCut cutcmd() { 
       TCut result;
       for (const auto& i_cut_cfg : _anaConf.cuts()) {
-	std::cout << i_cut_cfg.leaf() << std::endl;
 	if (i_cut_cfg.invert()) {
 	  result += !TCut(i_cut_cfg.leaf().c_str());
 	}
