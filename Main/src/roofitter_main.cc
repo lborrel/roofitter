@@ -186,7 +186,7 @@ namespace roofitter {
     std::vector<Analysis> analyses;
     for (auto& i_ana_cfg : analysis_cfgs) {
       Analysis i_ana(i_ana_cfg);
-	//      i_ana.fillData(tree);
+      i_ana.fillData(tree);
 	//      i_ana.fit();
 	//      if (config.getBool(i_ana.name+".unfold", false)) {
 	//	i_ana.unfold();
@@ -204,10 +204,10 @@ namespace roofitter {
     }
     TFile* outfile = new TFile(outfilename.c_str(), "RECREATE");
     for (auto& i_ana : analyses) {
-      //      TDirectory* outdir = outfile->mkdir(i_ana.name.c_str());
-      //      outdir->cd();
+      TDirectory* outdir = outfile->mkdir(i_ana.getConf().name().c_str());
+      outdir->cd();
       i_ana.Write();
-    //      outfile->cd();
+      outfile->cd();
     }
     outfile->Write();
     outfile->Close();

@@ -36,21 +36,23 @@ namespace roofitter {
 
   class Analysis {
   private:
-    AnalysisConfig _conf;
+    AnalysisConfig _anaConf;
     RooWorkspace* _ws;
 
     Observables _observables;
 
+    TH1* _hist;
+
   public:
     Analysis(const AnalysisConfig& cfg) : 
-      _conf(cfg),
-      _ws(new RooWorkspace(_conf.name().c_str(), true))
+      _anaConf(cfg),
+      _ws(new RooWorkspace(_anaConf.name().c_str(), true))
     {
-      std::cout << _conf.name() << std::endl;
-      if (_conf.observables().size() > 2) {
+      std::cout << _anaConf.name() << std::endl;
+      if (_anaConf.observables().size() > 2) {
 	throw cet::exception("Analysis Constructor") << "More than 2 observables is not currently supported";
       }
-      for (const auto& i_obs_cfg : _conf.observables()) {
+      for (const auto& i_obs_cfg : _anaConf.observables()) {
 	Observable i_obs(i_obs_cfg, _ws);
 	_observables.push_back(i_obs);
       }
@@ -133,16 +135,17 @@ namespace roofitter {
       RooRealVar* y_var = 0;
       std::string x_leaf = "";
       std::string y_leaf = "";
-      for (const auto& i_obs : observables) {
-	RooRealVar* var = ws->var(i_obs.getName().c_str());
+      for (const auto& i_obs : _observables) {
+	const auto& i_obs_conf = i_obs.getConf();
+	RooRealVar* var = _ws->var(i_obs_conf.name().c_str());
 	vars.add(*var);
 
 	if (x_leaf.empty()) {
-	  x_leaf = i_obs.getLeaf();
+	  x_leaf = i_obs_conf.leaf();
 	  x_var = var;
 	}
 	else if (y_leaf.empty()) {
-	  y_leaf = i_obs.getLeaf();
+	  y_leaf = i_obs_conf.leaf();
 	  y_var = var;
 	}
       }
@@ -150,22 +153,22 @@ namespace roofitter {
       std::string histname = "h_" + name;
       std::string draw = "";
       if (vars.getSize()==1) {
-	hist = x_var->createHistogram(histname.c_str());
+	_hist = x_var->createHistogram(histname.c_str());
 	draw = x_leaf;
       }
       else if (vars.getSize()==2) {
-	hist = x_var->createHistogram(histname.c_str(), RooFit::YVar(*y_var));
+	_hist = x_var->createHistogram(histname.c_str(), RooFit::YVar(*y_var));
 	draw = y_leaf+":"+x_leaf;
       }
       else {
 	throw cet::exception("Analysis::fillData()") << "Can't create histogram with more than two axes";
       }
       draw += ">>";
-      draw += hist->GetName();
+      draw += _hist->GetName();
 
       tree->Draw(draw.c_str(), cutcmd(), "goff");
 
-      ws->import(*(new RooDataHist("data", "data", vars, RooFit::Import(*hist))));
+      _ws->import(*(new RooDataHist("data", "data", vars, RooFit::Import(*_hist))));
     }
 
 
@@ -234,13 +237,15 @@ namespace roofitter {
     }
 
     void Write() {
-      //      hist->Write();
+      _hist->Write();
       
       //      fitResult->Write();
 
       _ws->Print();
-      //      ws->Write();
+      _ws->Write();
     }
+
+    const AnalysisConfig& getConf() const { return _anaConf; }
 
     std::string name;
     std::vector<TCut> cuts;

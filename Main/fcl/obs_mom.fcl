@@ -13,10 +13,12 @@ erf_tq08 : {
 
 mom : {
     name : "mom"
+    leaf : @local::mom_leaf
+
     min : 95
     max : 115
-    # Histogram Limits
-#    hist : { min : 95 max : 115	bin_width : 0.25 }
+    binWidth : 0.25
+
     #Fit Limits
 #    fit : { min : 95 max : 115 }
 

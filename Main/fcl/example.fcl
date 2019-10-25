@@ -3,11 +3,13 @@
 // on a trkana tree
 
 # Get cut and leaf definitions for the trkana tree
+#include "Main/fcl/obs_leaves_trkana.fcl"
+
 //#include "Main/cfg/cuts/cd3_trkana.cfg"
-//#include "Main/cfg/observables/leaves_trkana.cfg"
 
 # This is the analysis we want to include
 #include "Main/fcl/ana_cemDio_mom.fcl"
+
 
 # Can do more than one analysis in a single run
 analyses : [ @local::cemDio_mom ]

@@ -27,6 +27,9 @@ namespace roofitter {
     fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Observable name")};
     fhicl::Atom<double> min{fhicl::Name("min"), fhicl::Comment("Minimum value of observable")};
     fhicl::Atom<double> max{fhicl::Name("max"), fhicl::Comment("Maximum value of observable")};
+    fhicl::Atom<std::string> leaf{fhicl::Name("leaf"), fhicl::Comment("Leaf name for this observable")};
+
+    fhicl::OptionalAtom<double> binWidth{fhicl::Name("binWidth"), fhicl::Comment("Width of bin for histogram")};
     fhicl::OptionalTable<EffModelConfig> efficiencyModel{fhicl::Name("efficiencyModel"), fhicl::Comment("Efficiency model config for this observable")};
   };
   
@@ -44,6 +47,11 @@ namespace roofitter {
       factory_cmd.str("");
       factory_cmd << _obsConf.name() << "[" << _obsConf.min() << ", " << _obsConf.max() << "]";
       ws->factory(factory_cmd.str().c_str());      
+
+      double bin_width;
+      if (_obsConf.binWidth(bin_width)) {
+	ws->var(_obsConf.name().c_str())->setBins( (_obsConf.max()-_obsConf.min())/bin_width );
+      }
 
       // Construct the efficiency pdf for this observable
       if (_obsConf.efficiencyModel(_effModelConf)) {
@@ -171,6 +179,8 @@ namespace roofitter {
 	}
       }
     }
+
+    const ObservableConfig& getConf() const { return _obsConf; }
 
     std::string getName() const { return name; }
     std::string getLeaf() const { return leaf; }
