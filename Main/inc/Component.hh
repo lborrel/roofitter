@@ -11,8 +11,14 @@ namespace roofitter {
   typedef std::string ObsName;
   typedef std::string PdfName;
 
+  struct PdfConfig {
+    fhicl::Atom<std::string> obsName{fhicl::Name("obsName"), fhicl::Comment("Name of the observable that this PDF is for")};
+    fhicl::Atom<std::string> pdf{fhicl::Name("pdf"), fhicl::Comment("PDF function in RooFit factory format")};
+  };
+
   struct ComponentConfig {
     fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Component name")};
+    fhicl::Sequence< fhicl::Table<PdfConfig> > pdfs{fhicl::Name("pdfs"), fhicl::Comment("List of possible PDFs for this component")};
   };
 
   class Component {
@@ -21,7 +27,20 @@ namespace roofitter {
 
   public:
     Component (const ComponentConfig& cfg, RooWorkspace* ws) : _compConf(cfg) {
-      std::cout << _compConf.name() << std::endl;
+      std::stringstream factory_cmd;
+
+      for (const auto& i_pdf_cfg : _compConf.pdfs()) {
+	std::string i_obs_name = i_pdf_cfg.obsName();
+	// See if the observable has been created
+	if (!ws->var(i_obs_name.c_str())) {
+	  throw cet::exception("Component Constructor") << "Observable " << i_obs_name << " has not been created";
+	}
+	
+	std::string pdf = i_pdf_cfg.pdf();
+	factory_cmd.str("");
+	factory_cmd << pdf;
+	ws->factory(factory_cmd.str().c_str());
+      }
     }
 
     Component(const std::string& comp_name, const mu2e::SimpleConfig& config, RooWorkspace* ws) : name(comp_name) {
