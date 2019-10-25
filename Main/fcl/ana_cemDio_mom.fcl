@@ -3,14 +3,15 @@
 // CeM and DIO Pdfs including efficiency and 
 // resolution effects to data
 #include "Main/fcl/obs_mom.fcl"
-//#include "Main/cfg/components/cem.cfg"
+#include "Main/fcl/comp_cem.fcl"
 //#include "Main/cfg/components/dio.cfg"
 
 BEGIN_PROLOG
 cemDio_mom : {
     name : "cemDio_mom"
     observables : [ @local::mom ]
-#    components : [ cemLL, dioPol58 ]
+    components : [ @local::cemLL ]
+#, dioPol58 ]
 #    cuts : @local::AllCD3Cuts
 }
 

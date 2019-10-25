@@ -11,9 +11,19 @@ namespace roofitter {
   typedef std::string ObsName;
   typedef std::string PdfName;
 
+  struct ComponentConfig {
+    fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Component name")};
+  };
+
   class Component {
+  private:
+    ComponentConfig _compConf;
 
   public:
+    Component (const ComponentConfig& cfg, RooWorkspace* ws) : _compConf(cfg) {
+      std::cout << _compConf.name() << std::endl;
+    }
+
     Component(const std::string& comp_name, const mu2e::SimpleConfig& config, RooWorkspace* ws) : name(comp_name) {
     }
 

@@ -32,6 +32,7 @@ namespace roofitter {
   struct AnalysisConfig {
     fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Analysis name")};
     fhicl::Sequence< fhicl::Table<ObservableConfig> > observables{fhicl::Name("observables"), fhicl::Comment("List of observables")};
+    fhicl::Sequence< fhicl::Table<ComponentConfig> > components{fhicl::Name("components"), fhicl::Comment("List of components")};
   };
 
   class Analysis {
@@ -40,6 +41,7 @@ namespace roofitter {
     RooWorkspace* _ws;
 
     Observables _observables;
+    Components _components;
 
     TH1* _hist;
 
@@ -49,12 +51,23 @@ namespace roofitter {
       _ws(new RooWorkspace(_anaConf.name().c_str(), true))
     {
       std::cout << _anaConf.name() << std::endl;
+
+      // Construct the observables
       if (_anaConf.observables().size() > 2) {
 	throw cet::exception("Analysis Constructor") << "More than 2 observables is not currently supported";
       }
       for (const auto& i_obs_cfg : _anaConf.observables()) {
 	Observable i_obs(i_obs_cfg, _ws);
 	_observables.push_back(i_obs);
+      }
+
+      // Construct the components
+      for (const auto& i_comp_cfg : _anaConf.components()) {
+	Component i_comp(i_comp_cfg, _ws);
+
+	//	i_comp.constructPdfs(observables, config, ws);
+
+	_components.push_back(i_comp);
       }
     }
 
