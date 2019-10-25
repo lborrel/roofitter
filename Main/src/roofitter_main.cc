@@ -23,6 +23,7 @@
 #include "TH2.h"
 #include "TCut.h"
 
+#include "Main/inc/Configs.hh"
 #include "Main/inc/Analysis.hh"
 
 namespace roofitter {

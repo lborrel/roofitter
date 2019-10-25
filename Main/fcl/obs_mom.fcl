@@ -1,8 +1,8 @@
 BEGIN_PROLOG
 
 erf_tq08 : {
-    name :"erf_tq08"
-    func : {
+    name : "erf_tq08"
+    formula : {
 	formula : "(TMath::Erf((mom-thresh)*slope)+1)*0.5*maxEff"
 	parameters : [ { name : "thresh" value : 91.7 }, 
 		       { name : "slope" value : 0.091}, 
@@ -10,6 +10,15 @@ erf_tq08 : {
     }
 }
 
+dscb_tq08 : {
+    name : "dscb_tq08"
+    pdf : {
+	name : "dscb_tq08"
+	formula : "RooDSCB::dscb_tq08(mom, dscb_mean[-5.79828e-01], dscb_sigma[2.67104e-01], dscb_ANeg[4.21956e-01], dscb_PNeg[2.51002e+01], dscb_APos[2.22666e+00], dscb_PPos[5.95360e+00])"
+	#	validMin : -3
+	#	validMax : 4
+    }
+}
 
 mom : {
     name : "mom"
@@ -23,13 +32,7 @@ mom : {
 #    fit : { min : 95 max : 115 }
 
     efficiencyModel : @local::erf_tq08
-
-    # Resolution models
-    # Double-sided crystal ball with TrkQual>0.8
-#    dscb_tq08 : {
-#	pdf : { formula : "RooDSCB::dscb_tq08(mom, dscb_mean[-5.79828e-01], dscb_sigma[2.67104e-01], dscb_ANeg[4.21956e-01], dscb_PNeg[2.51002e+01], dscb_APos[2.22666e+00], dscb_PPos[5.95360e+00])" }
-#	valid : { min : -3 max : 4 }
-#    }
+    responseModel : @local::dscb_tq08
 }
 
 END_PROLOG

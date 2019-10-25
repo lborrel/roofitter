@@ -19,6 +19,7 @@
 
 #include "ConfigTools/inc/SimpleConfig.hh"
 
+#include "Main/inc/Configs.hh"
 #include "Main/inc/Observable.hh"
 #include "Main/inc/Component.hh"
 

@@ -6,21 +6,18 @@
 #include "fhiclcpp/types/OptionalAtom.h"
 #include "fhiclcpp/types/OptionalTable.h"
 
-namespace roofitter {
-  struct ParameterConfig {
-    fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Parameter name")};
-    fhicl::OptionalAtom<double> value{fhicl::Name("value"), fhicl::Comment("Parameter value")};
-    fhicl::OptionalAtom<double> minValue{fhicl::Name("minValue"), fhicl::Comment("Minimum parameter value")};
-    fhicl::OptionalAtom<double> maxValue{fhicl::Name("maxValue"), fhicl::Comment("Maximum parameter value")};
-  };
+#include "Main/inc/Configs.hh"
 
-  struct FunctionConfig {
-    fhicl::Atom<std::string> formula{fhicl::Name("formula"), fhicl::Comment("Formula string")};
-    fhicl::Sequence< fhicl::Table<ParameterConfig> > parameters{fhicl::Name("parameters"), fhicl::Comment("List of parameters that appear in the formula with values and value ranges")};
-  };
+namespace roofitter {
+
   struct EffModelConfig {
     fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Efficiency model name")};
-    fhicl::OptionalTable<FunctionConfig> func{fhicl::Name("func"), fhicl::Comment("Configuration for the function for the efficiency model")};
+    fhicl::OptionalTable<FormulaConfig> formula{fhicl::Name("formula"), fhicl::Comment("Configuration for the formula for the efficiency model")};
+  };
+
+  struct RespModelConfig {
+    fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Response model name")};
+    fhicl::OptionalTable<PdfConfig> pdf{fhicl::Name("pdf"), fhicl::Comment("PDF for the response model")};
   };
 
   struct ObservableConfig {
@@ -31,12 +28,14 @@ namespace roofitter {
 
     fhicl::OptionalAtom<double> binWidth{fhicl::Name("binWidth"), fhicl::Comment("Width of bin for histogram")};
     fhicl::OptionalTable<EffModelConfig> efficiencyModel{fhicl::Name("efficiencyModel"), fhicl::Comment("Efficiency model config for this observable")};
+    fhicl::OptionalTable<RespModelConfig> responseModel{fhicl::Name("responseModel"), fhicl::Comment("Response model config for this observable")};
   };
-  
+
   class Observable {
   private: 
     ObservableConfig _obsConf;
     EffModelConfig _effModelConf;
+    RespModelConfig _respModelConf;
 
   public:
     Observable (const ObservableConfig& cfg, RooWorkspace* ws) : _obsConf(cfg) {
@@ -56,13 +55,13 @@ namespace roofitter {
       // Construct the efficiency pdf for this observable
       if (_obsConf.efficiencyModel(_effModelConf)) {
 	std::cout << _effModelConf.name() << std::endl;
-	FunctionConfig funcConf;
-	if (_effModelConf.func(funcConf)) {
+	FormulaConfig formulaConf;
+	if (_effModelConf.formula(formulaConf)) {
 	  RooArgList list; // need to keep track of all vars that go into the function
 	  list.add(*ws->var(_obsConf.name().c_str())); // add the observable
 
 	  // Create all the other parameters
-	  for (const auto& i_param_cfg : funcConf.parameters()) {
+	  for (const auto& i_param_cfg : formulaConf.parameters()) {
 	    factory_cmd.str("");
 	    factory_cmd << i_param_cfg.name() << "[";
 
@@ -84,8 +83,18 @@ namespace roofitter {
 	    list.add(*ws->var(i_param_cfg.name().c_str()));
 	  }
 
-	  // Create the function itself
-	  ws->import(*( new RooFormulaVar(_effModelConf.name().c_str(), funcConf.formula().c_str(), list)));
+	  // Create the formula itself
+	  ws->import(*( new RooFormulaVar(_effModelConf.name().c_str(), formulaConf.formula().c_str(), list)));
+	}
+      }
+
+      // Construct the response PDF this observable
+      if (_obsConf.responseModel(_respModelConf)) {
+	PdfConfig pdfConf;
+	if (_respModelConf.pdf(pdfConf)) {
+	  factory_cmd.str("");
+	  factory_cmd << pdfConf.formula();
+	  ws->factory(factory_cmd.str().c_str());
 	}
       }
     }

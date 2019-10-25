@@ -4,6 +4,7 @@
 #include "RooWorkspace.h"
 #include "ConfigTools/inc/SimpleConfig.hh"
 
+#include "Main/inc/Configs.hh"
 #include "Main/inc/Observable.hh"
 
 namespace roofitter {
@@ -11,10 +12,9 @@ namespace roofitter {
   typedef std::string ObsName;
   typedef std::string PdfName;
 
-  struct PdfConfig {
+  struct FullPdfConfig {
     fhicl::Atom<std::string> obsName{fhicl::Name("obsName"), fhicl::Comment("Name of the observable that this PDF is for")};
-    fhicl::Atom<std::string> pdfName{fhicl::Name("pdfName"), fhicl::Comment("Name of this PDF")};
-    fhicl::Atom<std::string> pdf{fhicl::Name("pdf"), fhicl::Comment("PDF function in RooFit factory format")};
+    fhicl::Table<PdfConfig> pdf{fhicl::Name("pdf"), fhicl::Comment("PDF function in RooFit factory format")};
 
     fhicl::Atom<bool> incEffModel{fhicl::Name("incEffModel"), fhicl::Comment("True/false whether to include the efficiency model"), false};
     fhicl::Atom<std::string> effPdfName{fhicl::Name("effPdfName"), fhicl::Comment("Name to use for the PDF with efficiency model"), ""};
@@ -22,7 +22,7 @@ namespace roofitter {
 
   struct ComponentConfig {
     fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Component name")};
-    fhicl::Sequence< fhicl::Table<PdfConfig> > pdfs{fhicl::Name("pdfs"), fhicl::Comment("List of possible PDFs for this component")};
+    fhicl::Sequence< fhicl::Table<FullPdfConfig> > fullPdfs{fhicl::Name("fullPdfs"), fhicl::Comment("List of full PDF configurations for this component")};
   };
 
   class Component {
@@ -33,18 +33,19 @@ namespace roofitter {
     Component (const ComponentConfig& cfg, RooWorkspace* ws, const Observables& observables) : _compConf(cfg) {
       std::stringstream factory_cmd;
 
-      for (const auto& i_pdf_cfg : _compConf.pdfs()) {
+      for (const auto& i_pdf_cfg : _compConf.fullPdfs()) {
 	std::string i_obs_name = i_pdf_cfg.obsName();
 
 	for (const auto& i_obs : observables) {
 	  const auto& i_obs_cfg = i_obs.getConf();
 	  
+	  // Ignore any PDfs for observables we haven't created
 	  if (i_obs_name != i_obs_cfg.name()) {
-	    throw cet::exception("Component Constructor") << "Observable " << i_obs_name << " has not been created";
+	    continue;
 	  }
 	
 	  // Construct the true pdf
-	  std::string pdf = i_pdf_cfg.pdf();
+	  std::string pdf = i_pdf_cfg.pdf().formula();
 	  factory_cmd.str("");
 	  factory_cmd << pdf;
 	  ws->factory(factory_cmd.str().c_str());
@@ -53,9 +54,9 @@ namespace roofitter {
 	  EffModelConfig i_eff_cfg;
 	  if (i_pdf_cfg.incEffModel() && i_obs_cfg.efficiencyModel(i_eff_cfg)) {
 	    
-	    FunctionConfig i_eff_func_cfg;
-	    if (i_eff_cfg.func(i_eff_func_cfg)) {
-	      ws->import(*(new RooEffProd(i_pdf_cfg.effPdfName().c_str(), "", *ws->pdf(i_pdf_cfg.pdfName().c_str()), *ws->function(i_eff_cfg.name().c_str()))));
+	    FormulaConfig i_eff_formula_cfg;
+	    if (i_eff_cfg.formula(i_eff_formula_cfg)) {
+	      ws->import(*(new RooEffProd(i_pdf_cfg.effPdfName().c_str(), "", *ws->pdf(i_pdf_cfg.pdf().name().c_str()), *ws->function(i_eff_cfg.name().c_str()))));
 	    }
 	    else {
 	      throw cet::exception("Component Constructor") << "No function for efficiency model" << std::endl;
