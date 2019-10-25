@@ -2,13 +2,14 @@
 // An example analysis cfg file which fits
 // CeM and DIO Pdfs including efficiency and 
 // resolution effects to data
-//#include "Main/cfg/observables/mom.cfg"
+#include "Main/fcl/obs_mom.fcl"
 //#include "Main/cfg/components/cem.cfg"
 //#include "Main/cfg/components/dio.cfg"
+
 BEGIN_PROLOG
 cemDio_mom : {
     name : "cemDio_mom"
-#    observables : [ mom ]
+    observables : [ @local::mom ]
 #    components : [ cemLL, dioPol58 ]
 #    cuts : @local::AllCD3Cuts
 }

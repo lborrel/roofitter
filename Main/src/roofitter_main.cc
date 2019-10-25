@@ -48,8 +48,13 @@ namespace roofitter {
     fhicl::Atom<std::string> filename{fhicl::Name("filename"), fhicl::Comment("Output file name")};
   };
 
+  struct ObservableConfig {
+    fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Observable name")};
+  };
+
   struct AnalysisConfig {
     fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Analysis name")};
+    fhicl::Sequence< fhicl::Table<ObservableConfig> > observables{fhicl::Name("observables"), fhicl::Comment("List of observables")};
   };
 
   struct Config {
@@ -189,6 +194,9 @@ namespace roofitter {
     std::vector<AnalysisConfig> analyses = config().analyses();
     for (auto& i_ana : analyses) {
       std::cout << i_ana.name() << std::endl;
+      for (const auto& i_obs : i_ana.observables()) {
+	std::cout << i_obs.name() << std::endl;
+      }
 	//      i_ana.fillData(tree);
 	//      i_ana.fit();
 	//      if (config.getBool(i_ana.name+".unfold", false)) {

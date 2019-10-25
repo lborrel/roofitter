@@ -1,0 +1,37 @@
+BEGIN_PROLOG
+
+mom : {
+    name : "mom"
+    # Histogram Limits
+#    hist : { min : 95 max : 115	bin_width : 0.25 }
+    #Fit Limits
+#    fit : { min : 95 max : 115 }
+
+    # Efficiency Models
+    # Erf function with TrkQual>0.8 cut
+#    erf_tq08 : {
+#	func : {
+#	    parameters : { 
+#		thresh : 91.7
+#		slope : 0.091
+#		maxEff : 0.154
+#	    }
+#	    formula : "(TMath::Erf((mom-thresh)*slope)+1)*0.5*maxEff";
+#	}
+#    }
+
+    # Resolution models
+    # Double-sided crystal ball with TrkQual>0.8
+#    dscb_tq08 : {
+#	pdf : { formula : "RooDSCB::dscb_tq08(mom, dscb_mean[-5.79828e-01], dscb_sigma[2.67104e-01], dscb_ANeg[4.21956e-01], dscb_PNeg[2.51002e+01], dscb_APos[2.22666e+00], dscb_PPos[5.95360e+00])" }
+#	valid : { min : -3 max : 4 }
+#    }
+}
+
+END_PROLOG
+
+//
+// This tells emacs to view this file in c++ mode.
+// Local Variables:
+// mode:tcl
+// End:
