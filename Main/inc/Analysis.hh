@@ -30,10 +30,16 @@ namespace roofitter {
 
   typedef std::vector<Calculation> Calculations;
 
+  struct CutConfig {
+    fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Cut name")};
+    fhicl::Atom<std::string> leaf{fhicl::Name("leaf"), fhicl::Comment("Leaf of this tree cut")};
+  };
+
   struct AnalysisConfig {
     fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Analysis name")};
     fhicl::Sequence< fhicl::Table<ObservableConfig> > observables{fhicl::Name("observables"), fhicl::Comment("List of observables")};
     fhicl::Sequence< fhicl::Table<ComponentConfig> > components{fhicl::Name("components"), fhicl::Comment("List of components")};
+    fhicl::Sequence< fhicl::Table<CutConfig> > cuts{fhicl::Name("cuts"), fhicl::Comment("List of cuts to apply")};
   };
 
   class Analysis {
@@ -65,9 +71,6 @@ namespace roofitter {
       // Construct the components
       for (const auto& i_comp_cfg : _anaConf.components()) {
 	Component i_comp(i_comp_cfg, _ws, _observables);
-
-	//	i_comp.constructPdfs(observables, config, ws);
-
 	_components.push_back(i_comp);
       }
     }
@@ -136,8 +139,9 @@ namespace roofitter {
 
     TCut cutcmd() { 
       TCut result;
-      for (const auto& i_cut : cuts) {
-	result += i_cut;
+      for (const auto& i_cut_cfg : _anaConf.cuts()) {
+	std::cout << i_cut_cfg.leaf() << std::endl;
+	result += TCut(i_cut_cfg.leaf().c_str());
       }
       return result;
     }

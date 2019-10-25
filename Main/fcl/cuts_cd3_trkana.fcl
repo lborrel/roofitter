@@ -1,0 +1,22 @@
+///////////////////////////////////////
+// All CD3 cuts for a trkana tree
+BEGIN_PROLOG
+
+goodfit_leaf : "de.status>0"
+triggered_leaf : "(trigbits&0x208)>0"
+inTimeWindow_leaf : "de.t0>700 && de.t0<1695"
+inTanDipCut_leaf : "deent.td>0.577350 && deent.td<1.000"
+inD0Cut_leaf : "deent.d0>-80 && deent.d0<105"
+inMaxRCut_leaf : "deent.d0+2./deent.om>450 && deent.d0+2./deent.om<680"
+noCRVHit_leaf : "(bestcrv<0||(de.t0-crvinfo._timeWindowStart[bestcrv]<-50||de.t0-crvinfo._timeWindowStart[bestcrv]>150.0))"
+passTrkQual_leaf : "dequal.TrkQual>0.8"
+passTrkPID_leaf : "dequal.TrkPID>0.95"
+noUpstream_leaf : "ue.status<=0"
+recomom_leaf : "deent.mom>95"
+
+END_PROLOG
+//
+// This tells emacs to view this file in c++ mode.
+// Local Variables:
+// mode:tcl
+// End:

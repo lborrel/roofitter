@@ -1,0 +1,17 @@
+BEGIN_PROLOG
+
+goodfit : { name : "goodfit" leaf : @local::goodfit_leaf  }
+triggered : { name : "triggered" leaf : @local::triggered_leaf  }
+inTimeWindow : { name : "inTimeWindow" leaf : @local::inTimeWindow_leaf  }
+inTanDipCut : { name : "inTanDipCut" leaf : @local::inTanDipCut_leaf  }
+inD0Cut : { name : "inD0Cut" leaf : @local::inD0Cut_leaf  }
+inMaxRCut : { name : "inMaxRCut" leaf : @local::inMaxRCut_leaf  }
+noCRVHit : { name : "noCRVHit" leaf : @local::noCRVHit_leaf  }
+passTrkQual : { name : "passTrkQual" leaf : @local::passTrkQual_leaf  }
+passTrkPID : { name : "passTrkPID" leaf : @local::passTrkPID_leaf  }
+noUpstream : { name : "noUpstream" leaf : @local::noUpstream_leaf  }
+recomom : { name : "recomom" leaf : @local::recomom_leaf  }
+
+AllCD3Cuts : [ @local::goodfit, @local::triggered, @local::inTimeWindow, @local::inTanDipCut, @local::inD0Cut, @local::inMaxRCut, @local::noCRVHit, @local::passTrkQual, @local::passTrkPID, @local::noUpstream, @local::recomom ]
+
+END_PROLOG
