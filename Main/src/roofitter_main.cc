@@ -188,7 +188,7 @@ namespace roofitter {
     for (auto& i_ana_cfg : analysis_cfgs) {
       Analysis i_ana(i_ana_cfg);
       i_ana.fillData(tree);
-	//      i_ana.fit();
+      i_ana.fit();
 	//      if (config.getBool(i_ana.name+".unfold", false)) {
 	//	i_ana.unfold();
 	//      }

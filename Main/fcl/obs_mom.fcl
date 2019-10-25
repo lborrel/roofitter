@@ -28,8 +28,8 @@ mom : {
     max : 115
     binWidth : 0.25
 
-    #Fit Limits
-#    fit : { min : 95 max : 115 }
+    fitMin : 95
+    fitMax : 115
 
     efficiencyModel : @local::erf_tq08
     responseModel : @local::dscb_tq08

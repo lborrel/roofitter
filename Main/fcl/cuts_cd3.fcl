@@ -13,7 +13,7 @@ noUpstream : { name : "noUpstream" leaf : @local::noUpstream_leaf  }
 recomom : { name : "recomom" leaf : @local::recomom_leaf  }
 
 # to invert a cut do the following
-noCRVHit : { name : "noCRVHit" leaf : @local::noCRVHit_leaf  invert : true }
+#noCRVHit : { name : "noCRVHit" leaf : @local::noCRVHit_leaf  invert : true }
 
 AllCD3Cuts : [ @local::goodfit, @local::triggered, @local::inTimeWindow, @local::inTanDipCut, @local::inD0Cut, @local::inMaxRCut, @local::noCRVHit, @local::passTrkQual, @local::passTrkPID, @local::noUpstream, @local::recomom ]
 

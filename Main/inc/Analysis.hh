@@ -203,10 +203,10 @@ namespace roofitter {
 
 
     void fit() {
-      RooAbsData* data = ws->data("data");
-      RooAbsPdf* model = ws->pdf(modelPdf.c_str());
+      RooAbsData* data = _ws->data("data");
+      RooAbsPdf* model = _ws->pdf(_anaConf.model().name().c_str());
       if (!model) {
-	throw cet::exception("Analysis::fit()") << "Can't find model \"" << modelPdf << "\" in RooWorkspace";
+	throw cet::exception("Analysis::fit()") << "Can't find model \"" << _anaConf.model().name() << "\" in RooWorkspace";
       }
       fitResult = model->fitTo(*data, RooFit::Save(), RooFit::Range("fit"), RooFit::Extended(true));
       fitResult->printValue(std::cout);
@@ -269,7 +269,7 @@ namespace roofitter {
     void Write() {
       _hist->Write();
       
-      //      fitResult->Write();
+      fitResult->Write();
 
       _ws->Print();
       _ws->Write();
