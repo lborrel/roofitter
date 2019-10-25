@@ -20,12 +20,13 @@ cemLL : {
 			name : "cemLLmom"
 			formula : "RooCeMPdf::cemLLmom(mom, eMax[104.97], me[0.511], alpha[1.0/137.035999139])" 
 		    }
-		    #	integrator : "RooMCIntegrator"
 		    incEffModel : true
 		    effPdfName : "cemLLmomEff"
 		    
-#		    incRespModel : true
-#		    respPdfName : "cemLLmomEffResp"
+		    incRespModel : true
+		    respPdfName : "cemLLmomEffResp"
+
+		    integrator : "RooMCIntegrator"
 		},
 		{ 
 		    obsName : "t0" 

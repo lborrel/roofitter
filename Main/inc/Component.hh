@@ -18,6 +18,11 @@ namespace roofitter {
 
     fhicl::Atom<bool> incEffModel{fhicl::Name("incEffModel"), fhicl::Comment("True/false whether to include the efficiency model"), false};
     fhicl::Atom<std::string> effPdfName{fhicl::Name("effPdfName"), fhicl::Comment("Name to use for the PDF with efficiency model"), ""};
+
+    fhicl::Atom<bool> incRespModel{fhicl::Name("incRespModel"), fhicl::Comment("True/false whether to include the response model"), false};
+    fhicl::Atom<std::string> respPdfName{fhicl::Name("respPdfName"), fhicl::Comment("Name to use for the PDF with response model"), ""};
+
+    fhicl::OptionalAtom<std::string> integrator{fhicl::Name("integrator"), fhicl::Comment("Class name for a different integrator to use")};
   };
 
   struct ComponentConfig {
@@ -50,6 +55,8 @@ namespace roofitter {
 	  factory_cmd << pdf;
 	  ws->factory(factory_cmd.str().c_str());
 
+	  std::string currentPdfName = i_pdf_cfg.pdf().name();
+
 	  // Create a PDF with the efficiency model, if requested
 	  EffModelConfig i_eff_cfg;
 	  if (i_pdf_cfg.incEffModel() && i_obs_cfg.efficiencyModel(i_eff_cfg)) {
@@ -60,6 +67,34 @@ namespace roofitter {
 	    }
 	    else {
 	      throw cet::exception("Component Constructor") << "No function for efficiency model" << std::endl;
+	    }
+	    currentPdfName = i_pdf_cfg.effPdfName();
+	  }
+
+	  // Create a PDF with the response model, if requested
+	  RespModelConfig i_resp_cfg;
+	  if (i_pdf_cfg.incRespModel() && i_obs_cfg.responseModel(i_resp_cfg)) {
+	    factory_cmd.str("");
+	    factory_cmd << "FCONV::" << i_pdf_cfg.respPdfName() << "(" << i_obs_name << ", " << currentPdfName << ", " << i_resp_cfg.name() << ")";
+	    ws->factory(factory_cmd.str().c_str());
+	
+	    ((RooFFTConvPdf*) ws->pdf(i_pdf_cfg.respPdfName().c_str()))->setBufferFraction(5.0);
+	  }
+
+	  // Set any new integrator for all the Pdfs
+	  std::string new_integrator;
+	  if (i_pdf_cfg.integrator(new_integrator)) {
+	    RooNumIntConfig customConfig(*RooAbsReal::defaultIntegratorConfig());
+	    customConfig.method1D().setLabel(new_integrator.c_str());
+	    
+	    if(!i_pdf_cfg.pdf().name().empty()) {
+	      ws->pdf(i_pdf_cfg.pdf().name().c_str())->setIntegratorConfig(customConfig);
+	    }
+	    if(!i_pdf_cfg.effPdfName().empty()) {
+	      ws->pdf(i_pdf_cfg.effPdfName().c_str())->setIntegratorConfig(customConfig);
+	    }
+	    if(!i_pdf_cfg.respPdfName().empty()) {
+	      ws->pdf(i_pdf_cfg.respPdfName().c_str())->setIntegratorConfig(customConfig);
 	    }
 	  }
 	}
@@ -118,22 +153,6 @@ namespace roofitter {
 	  currentPdfSuffix += this_suffix;
 	}
 
-	// Set any new integrator for all the Pdfs
-	std::string new_integrator = config.getString(name+"."+obs.getName()+".integrator", "");
-	if (!new_integrator.empty()) {
-	  RooNumIntConfig customConfig(*RooAbsReal::defaultIntegratorConfig());
-	  customConfig.method1D().setLabel(new_integrator.c_str());
-
-	  if(!truePdfName.empty()) {
-	    ws->pdf(truePdfName.c_str())->setIntegratorConfig(customConfig);
-	  }
-	  if(!effPdfName.empty()) {
-	    ws->pdf(effPdfName.c_str())->setIntegratorConfig(customConfig);
-	  }
-	  if(!resPdfName.empty()) {
-	    ws->pdf(resPdfName.c_str())->setIntegratorConfig(customConfig);
-	  }
-	}
       }
 
       // Now create 2D models from these
