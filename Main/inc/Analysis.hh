@@ -33,6 +33,7 @@ namespace roofitter {
   struct CutConfig {
     fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Cut name")};
     fhicl::Atom<std::string> leaf{fhicl::Name("leaf"), fhicl::Comment("Leaf of this tree cut")};
+    fhicl::Atom<bool> invert{fhicl::Name("invert"), fhicl::Comment("Set to true if you want to invert the cut"), false};
   };
 
   struct AnalysisConfig {
@@ -141,7 +142,12 @@ namespace roofitter {
       TCut result;
       for (const auto& i_cut_cfg : _anaConf.cuts()) {
 	std::cout << i_cut_cfg.leaf() << std::endl;
-	result += TCut(i_cut_cfg.leaf().c_str());
+	if (i_cut_cfg.invert()) {
+	  result += !TCut(i_cut_cfg.leaf().c_str());
+	}
+	else {
+	  result += TCut(i_cut_cfg.leaf().c_str());
+	}
       }
       return result;
     }
