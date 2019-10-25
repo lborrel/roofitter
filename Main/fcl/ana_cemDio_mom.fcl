@@ -4,14 +4,14 @@
 // resolution effects to data
 #include "Main/fcl/obs_mom.fcl"
 #include "Main/fcl/comp_cem.fcl"
-//#include "Main/cfg/components/dio.cfg"
+#include "Main/fcl/comp_dio.fcl"
+
 
 BEGIN_PROLOG
 cemDio_mom : {
     name : "cemDio_mom"
     observables : [ @local::mom ]
-    components : [ @local::cemLL ]
-#, dioPol58 ]
+    components : [ @local::cemLL, @local::dioPol58 ]
 #    cuts : @local::AllCD3Cuts
 }
 
