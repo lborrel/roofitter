@@ -1,6 +1,11 @@
-//////////////////////////////////
-// Define some models for CeM
+//////////////////////////////////////
+// A fcl files for the CeM component.
+// Defines a couple of possible models that can be used.
+// 
+
 BEGIN_PROLOG
+
+// Leading Order (momentum observable only)
 cemLO : {
     name : "cemLO"
     pdfs : [ 
@@ -11,6 +16,7 @@ cemLO : {
 	   ]
 }
 
+// Leading Log (momentum and t0 observables)
 cemLL : {
     name : "cemLL"
     fullPdfs : [ 
@@ -38,9 +44,3 @@ cemLL : {
 	       ]
 }
 END_PROLOG
-
-//
-// This tells emacs to view this file in c++ mode.
-// Local Variables:
-// mode:tcl
-// End:

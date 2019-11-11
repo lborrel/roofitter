@@ -1,8 +1,10 @@
-///////////////////////////////////
-// Define some models for DIO
+//////////////////////////////////////
+// A fcl files for the DIO component.
+// 
+
 BEGIN_PROLOG
 
-// Pol58
+// 5th - 8th Order Polynomial (momentum and t0)
 dioPol58 : {
     name : "dioPol58"
     fullPdfs : [
@@ -29,8 +31,3 @@ dioPol58 : {
 }
 
 END_PROLOG
-//
-// This tells emacs to view this file in c++ mode.
-// Local Variables:
-// mode:tcl
-// End:

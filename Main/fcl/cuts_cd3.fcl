@@ -1,5 +1,9 @@
+//////////////////////////////
+// A fcl file that defines all posible cuts in the analysis
+
 BEGIN_PROLOG
 
+// Each individual cut (leaf definition will depend on the tree used)
 goodfit : { name : "goodfit" leaf : @local::goodfit_leaf  }
 triggered : { name : "triggered" leaf : @local::triggered_leaf  }
 inTimeWindow : { name : "inTimeWindow" leaf : @local::inTimeWindow_leaf  }
@@ -12,9 +16,10 @@ passTrkPID : { name : "passTrkPID" leaf : @local::passTrkPID_leaf  }
 noUpstream : { name : "noUpstream" leaf : @local::noUpstream_leaf  }
 recomom : { name : "recomom" leaf : @local::recomom_leaf  }
 
-# to invert a cut do the following
-#noCRVHit : { name : "noCRVHit" leaf : @local::noCRVHit_leaf  invert : true }
+// To invert a cut do this:
+// noCRVHit : { name : "noCRVHit" leaf : @local::noCRVHit_leaf  invert : true }
 
+// Define a list of all the cuts that will be applied
 AllCD3Cuts : [ @local::goodfit, @local::triggered, @local::inTimeWindow, @local::inTanDipCut, @local::inD0Cut, @local::inMaxRCut, @local::noCRVHit, @local::passTrkQual, @local::passTrkPID, @local::noUpstream, @local::recomom ]
 
 END_PROLOG

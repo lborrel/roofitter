@@ -1,7 +1,8 @@
 ///////////////////////////////////
-// An example analysis cfg file which fits
-// CeM and DIO Pdfs including efficiency and 
-// resolution effects to data
+// An example analysis fcl file which fits
+// the momentum spectrum for CeM and DIO components.
+// It includes efficiency and response functions
+
 #include "Main/fcl/obs_mom.fcl"
 #include "Main/fcl/comp_cem.fcl"
 #include "Main/fcl/comp_dio.fcl"
@@ -21,8 +22,3 @@ cemDio_mom : {
 }
 
 END_PROLOG
-//
-// This tells emacs to view this file in c++ mode.
-// Local Variables:
-// mode:tcl
-// End:

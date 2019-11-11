@@ -1,5 +1,10 @@
+///////////////////////////////////////////
+// A fcl file for the momentum observable.
+// This includes definitions of efficiency and response models
+
 BEGIN_PROLOG
 
+// Efficiency models
 erf_tq08 : {
     name : "erf_tq08"
     formula : {
@@ -10,6 +15,7 @@ erf_tq08 : {
     }
 }
 
+// Response models
 dscb_tq08 : {
     name : "dscb_tq08"
     pdf : {
@@ -20,6 +26,7 @@ dscb_tq08 : {
     }
 }
 
+// Observable definition
 mom : {
     name : "mom"
     leaf : @local::mom_leaf
@@ -36,9 +43,3 @@ mom : {
 }
 
 END_PROLOG
-
-//
-// This tells emacs to view this file in c++ mode.
-// Local Variables:
-// mode:tcl
-// End:

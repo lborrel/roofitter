@@ -1,5 +1,7 @@
-///////////////////////////////////////
-// All CD3 cuts for a trkana tree
+///////////////////////////////////
+// A fcl file of leaf definitions for cuts
+// in a TrkAna tree
+
 BEGIN_PROLOG
 
 goodfit_leaf : "de.status>0"
@@ -15,8 +17,3 @@ noUpstream_leaf : "ue.status<=0"
 recomom_leaf : "deent.mom>95"
 
 END_PROLOG
-//
-// This tells emacs to view this file in c++ mode.
-// Local Variables:
-// mode:tcl
-// End:
