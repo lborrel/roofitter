@@ -42,6 +42,7 @@ namespace roofitter {
     fhicl::Sequence< fhicl::Table<ComponentConfig> > components{fhicl::Name("components"), fhicl::Comment("List of components")};
     fhicl::Sequence< fhicl::Table<CutConfig> > cuts{fhicl::Name("cuts"), fhicl::Comment("List of cuts to apply")};
     fhicl::Table<PdfConfig> model{fhicl::Name("model"), fhicl::Comment("The PDF for the full final model to fit")};
+    fhicl::Atom<bool> allow_failure{fhicl::Name("allow_failure"), fhicl::Comment("If set to true, then roofitter will not throw an exception for a failed fit."), false};
   };
 
   class Analysis {
@@ -142,7 +143,7 @@ namespace roofitter {
       // Construct all the calculations
       config.getVectorString(name+".calculations", calcs, std::vector<std::string>()); // default is an empty string
 
-      allow_failure = config.getBool(name+".allow_failure", false);
+      //      allow_failure = config.getBool(name+".allow_failure", false);
     }
 
     TCut cutcmd() { 
@@ -213,8 +214,8 @@ namespace roofitter {
 
       int status = fitResult->status();
       if (status>0) {
-	if (!allow_failure) {
-	  throw cet::exception("Analysis::fitTo()") << "Fit failed! If you want roofitter to continue and not throw this exception then set " << name << ".allow_failure = true; in your cfg file";
+	if (!_anaConf.allow_failure()) {
+	  throw cet::exception("Analysis::fitTo()") << "Fit failed! If you want roofitter to continue and not throw this exception then set allow_failure to true in your fcl file";
 	}
       }
     }
@@ -287,8 +288,6 @@ namespace roofitter {
     Components components;
     Calculations calcs;
     RooFitResult* fitResult;
-
-    bool allow_failure;
   };
 }
 
