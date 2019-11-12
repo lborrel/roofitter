@@ -4,6 +4,6 @@
 
 BEGIN_PROLOG
 mom_leaf : "deent.mom"
-t0.leaf : "de.t0"
-momres.leaf : "0.5*(deent.mom - ueent.mom)"
+t0_leaf : "de.t0"
+momresp_leaf : "0.5*(deent.mom - ueent.mom)"
 END_PROLOG

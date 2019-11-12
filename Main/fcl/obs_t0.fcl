@@ -1,0 +1,28 @@
+///////////////////////////////////////////
+// A fcl file for the t0 observable.
+
+BEGIN_PROLOG
+
+// Efficiency models
+// (none)
+
+// Response models
+// (none)
+
+// Observable definition
+t0 : {
+   name : "t0"
+   leaf : @local::t0_leaf
+
+   min : 400
+   max : 1800
+   bin_width : 100
+
+   fitMin : 700
+   fitMax : 1700
+
+   efficiencyModel : @nil
+   responseModel : @nil
+}
+
+END_PROLOG

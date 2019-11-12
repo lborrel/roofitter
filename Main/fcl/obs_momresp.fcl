@@ -1,0 +1,28 @@
+///////////////////////////////////////////
+// A fcl file for the momresp observable.
+
+BEGIN_PROLOG
+
+// Efficiency models
+// (none)
+
+// Response models
+// (none)
+
+// Observable definition
+momresp : {
+   name : "momresp"
+   leaf : @local::momresp_leaf
+
+   min : -10
+   max : 10
+   bin_width : 0.25
+
+   fitMin : -4
+   fitMax : 0.5
+
+   efficiencyModel : @nil
+   responseModel : @nil
+}
+
+END_PROLOG
