@@ -6,12 +6,24 @@
 
 #include "cetlib_except/exception.h"
 
+#include "fhiclcpp/intermediate_table.h"
+#include "fhiclcpp/parse.h"
+#include "fhiclcpp/ParameterSet.h"
+#include "fhiclcpp/make_ParameterSet.h"
+
+#include "fhiclcpp/types/Atom.h"
+#include "fhiclcpp/types/Table.h"
+#include "fhiclcpp/types/Sequence.h"
+
+#include "cetlib/filepath_maker.h"
+
 #include "TCanvas.h"
 #include "TFile.h"
 #include "TTree.h"
 #include "TH2.h"
 #include "TCut.h"
 
+#include "Main/inc/Configs.hh"
 #include "Main/inc/Analysis.hh"
 
 namespace roofitter {
@@ -27,6 +39,30 @@ namespace roofitter {
     std::string input_treename;
     std::string output_filename;
   };
+
+  struct InputConfig {
+    fhicl::Atom<std::string> filename{fhicl::Name("filename"), fhicl::Comment("Input file name")};
+    fhicl::Atom<std::string> treename{fhicl::Name("treename"), fhicl::Comment("Input tree name")};
+  };
+
+  struct OutputConfig {
+    fhicl::Atom<std::string> filename{fhicl::Name("filename"), fhicl::Comment("Output file name")};
+  };
+
+  struct Config {
+    fhicl::Table<InputConfig> input{fhicl::Name("input"), fhicl::Comment("Configuration of input file")};
+    fhicl::Table<OutputConfig> output{fhicl::Name("output"), fhicl::Comment("Configuration of output file")};
+    fhicl::Sequence< fhicl::Table<AnalysisConfig> > analyses{fhicl::Name("analyses"), fhicl::Comment("List of analyses")};
+  };
+
+
+  fhicl::Table<Config> retrieveConfiguration( fhicl::ParameterSet const & pset ) {
+    std::set<std::string> ignorable_keys {}; // keys that should be ignored by the validation system (can be empty)
+    
+    fhicl::Table<Config> const result { pset, ignorable_keys }; // performs validation and value setting
+    
+    return result;
+  }
 
   void PrintHelp() {
     std::cout << "Input Arguments:" << std::endl;
@@ -98,16 +134,32 @@ namespace roofitter {
       return 0;
     }
 
-    mu2e::SimpleConfig config(args.cfg_filename);
-    if (args.debug_cfg) {
+    // This defines the path to be used to resolve fcl #include directives
+    // The argument is the name of an environment variable
+    // This policy says that the the top level file may be in the local directory,
+    // but all other #include files must be relative to the path defined in the env variable.
+    // There are other policy choices that will exclude the local directory for the top file.
+    cet::filepath_lookup_after1 policy("FHICL_FILE_PATH");
+
+    // This is boilerplate: you need to make an intermediate object
+    // The intermediate object is editable; this is how art adds the command line arguments as overrides
+    fhicl::intermediate_table tbl;
+    fhicl::parse_document(args.cfg_filename, policy, tbl);
+
+    // Then turn that object into a fhicl table:
+    fhicl::ParameterSet pset;
+    fhicl::make_ParameterSet(tbl, pset);
+
+    auto config = retrieveConfiguration(pset);
+    /*    if (args.debug_cfg) {
       std::ofstream fileout(args.debug_cfg_filename);
       config.print(fileout);
       std::cout << "Config written to " << args.debug_cfg_filename << std::endl;
       return 0;
-    }
+      }*/
 
 
-    std::string filename = config.getString("input.filename", "");
+    std::string filename = config().input().filename();
     if (!args.input_filename.empty()) { // override cfg file with
       filename = args.input_filename;
     }
@@ -116,10 +168,10 @@ namespace roofitter {
     }
     TFile* file = new TFile(filename.c_str(), "READ");
     if (file->IsZombie()) {
-      throw cet::exception("roofitter::main") << "Input file " << filename << " is a zombie";
+      throw cet::exception("roofitter::main()") << "Input file " << filename << " is a zombie";
     }
 
-    std::string treename = config.getString("input.treename", "");
+    std::string treename = config().input().treename();
     if (!args.input_treename.empty()) { // override cfg tree with
       treename = args.input_treename;
     }
@@ -131,23 +183,18 @@ namespace roofitter {
       throw cet::exception("roofitter::main") << "Input tree " << treename << " is not in file";
     }
 
+    std::vector<AnalysisConfig> analysis_cfgs = config().analyses();
     std::vector<Analysis> analyses;
-    std::vector<std::string> ana_names;
-    config.getVectorString("analyses", ana_names);
-    for (const auto& i_ana_name : ana_names) {
-      analyses.push_back(Analysis(i_ana_name, config));
-    }
-
-    for (auto& i_ana : analyses) {
+    for (auto& i_ana_cfg : analysis_cfgs) {
+      Analysis i_ana(i_ana_cfg);
       i_ana.fillData(tree);
       i_ana.fit();
-      if (config.getBool(i_ana.name+".unfold", false)) {
-	i_ana.unfold();
-      }
+      i_ana.unfold();
       i_ana.calculate();
+      analyses.push_back(i_ana);
     }
-
-    std::string outfilename = config.getString("output.filename", "");
+    
+    std::string outfilename = config().output().filename();
     if (!args.output_filename.empty()) { // override cfg file with
       outfilename = args.output_filename;
     }
@@ -156,14 +203,14 @@ namespace roofitter {
     }
     TFile* outfile = new TFile(outfilename.c_str(), "RECREATE");
     for (auto& i_ana : analyses) {
-      TDirectory* outdir = outfile->mkdir(i_ana.name.c_str());
+      TDirectory* outdir = outfile->mkdir(i_ana.getConf().name().c_str());
       outdir->cd();
       i_ana.Write();
       outfile->cd();
     }
     outfile->Write();
     outfile->Close();
-
+    
     std::cout << "Done" << std::endl;
     return 0;
   }

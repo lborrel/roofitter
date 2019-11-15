@@ -1,0 +1,9 @@
+///////////////////////////////////
+// A fcl file of leaf definitions for observables
+// in a TrkAna tree
+
+BEGIN_PROLOG
+mom_leaf : "deent.mom"
+t0_leaf : "de.t0"
+momresp_leaf : "0.5*(deent.mom - ueent.mom)"
+END_PROLOG

@@ -1,0 +1,33 @@
+//////////////////////////////////////
+// A fcl files for the DIO component.
+// 
+
+BEGIN_PROLOG
+
+// 5th - 8th Order Polynomial (momentum and t0)
+dioPol58 : {
+    name : "dioPol58"
+    fullPdfs : [
+		{
+		    obsName : "mom"
+		    pdf : {
+			name : "dioPol58mom"
+			formula : "RooPol58::dioPol58mom(mom, c5[8.6434e-17], c6[1.16874e-17], c7[-1.87828e-19], c8[9.16327e-20])"
+		    }
+		    incEffModel : true
+		    effPdfName : "dioPol58momEff"
+		    
+		    incRespModel : true
+		    respPdfName : "dioPol58momEffResp"
+		},
+		{
+		    obsName : "t0"
+		    pdf : {
+			name : "dioPol58t0"
+			formula : "Exponential::dioPol58t0(t0, muLife[-0.001157])"
+		    }
+		}
+		]
+}
+
+END_PROLOG

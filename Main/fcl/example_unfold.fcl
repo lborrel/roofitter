@@ -1,0 +1,24 @@
+////////////////////////////////////
+// An example fcl file that you can run
+// on a trkana tree
+
+// Get cut and leaf definitions for the trkana tree
+#include "Main/fcl/obs_leaves_trkana.fcl"
+#include "Main/fcl/cuts_cd3_trkana.fcl"
+
+/// This is the analysis we want to include
+#include "Main/fcl/ana_cemDio_mom_unfold.fcl"
+
+
+// Can do more than one analysis in a single run
+analyses : [ @local::cemDio_mom ]
+
+// Can define input and output files here or with command line arguments
+input : {
+    filename : ""
+    treename : ""
+}
+
+output : {
+    filename : ""
+}

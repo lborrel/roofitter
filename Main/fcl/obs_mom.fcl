@@ -1,0 +1,45 @@
+///////////////////////////////////////////
+// A fcl file for the momentum observable.
+// This includes definitions of efficiency and response models
+
+BEGIN_PROLOG
+
+// Efficiency models
+erf_tq08 : {
+    name : "erf_tq08"
+    formula : {
+	formula : "(TMath::Erf((mom-thresh)*slope)+1)*0.5*maxEff"
+	parameters : [ { name : "thresh" value : 91.7 }, 
+		       { name : "slope" value : 0.091}, 
+		       { name : "maxEff" value : 0.154}]
+    }
+}
+
+// Response models
+dscb_tq08 : {
+    name : "dscb_tq08"
+    pdf : {
+	name : "dscb_tq08"
+	formula : "RooDSCB::dscb_tq08(mom, dscb_mean[-5.79828e-01], dscb_sigma[2.67104e-01], dscb_ANeg[4.21956e-01], dscb_PNeg[2.51002e+01], dscb_APos[2.22666e+00], dscb_PPos[5.95360e+00])"
+    }
+    validMin : -3
+    validMax : 4
+}
+
+// Observable definition
+mom : {
+    name : "mom"
+    leaf : @local::mom_leaf
+
+    min : 95
+    max : 115
+    binWidth : 0.25
+
+    fitMin : 95
+    fitMax : 115
+
+    efficiencyModel : @local::erf_tq08
+    responseModel : @local::dscb_tq08
+}
+
+END_PROLOG
