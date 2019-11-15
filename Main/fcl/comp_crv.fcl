@@ -1,0 +1,33 @@
+//////////////////////////////////////
+// A fcl files for the cosmic ray component.
+// 
+
+BEGIN_PROLOG
+
+// Flat (momentum and t0)
+crvFlat : {
+    name : "crvFlat"
+    fullPdfs : [
+		{
+		    obsName : "mom"
+		    pdf : {
+			name : "crvFlatmom"
+			formula : "Polynomial::crvFlatmom(mom)"
+		    }
+		    incEffModel : true
+		    effPdfName : "crvFlatmomEff"
+		    
+		    incRespModel : true
+		    respPdfName : "crvFlatmomEffResp"
+		},
+		{
+		    obsName : "t0"
+		    pdf : {
+			name : "crvFlatt0"
+			formula : "Polynomial::crvFlatt0(t0)"
+		    }
+		}
+		]
+}
+
+END_PROLOG

@@ -22,4 +22,6 @@ recomom : { name : "recomom" leaf : @local::recomom_leaf  }
 // Define a list of all the cuts that will be applied
 AllCD3Cuts : [ @local::goodfit, @local::triggered, @local::inTimeWindow, @local::inTanDipCut, @local::inD0Cut, @local::inMaxRCut, @local::noCRVHit, @local::passTrkQual, @local::passTrkPID, @local::noUpstream, @local::recomom ]
 
+CD3CutsNoCRV : [ @local::goodfit, @local::triggered, @local::inTimeWindow, @local::inTanDipCut, @local::inD0Cut, @local::inMaxRCut, @local::passTrkQual, @local::passTrkPID, @local::noUpstream, @local::recomom ]
+
 END_PROLOG
