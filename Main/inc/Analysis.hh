@@ -42,7 +42,9 @@ namespace roofitter {
     fhicl::Sequence< fhicl::Table<ComponentConfig> > components{fhicl::Name("components"), fhicl::Comment("List of components")};
     fhicl::Sequence< fhicl::Table<CutConfig> > cuts{fhicl::Name("cuts"), fhicl::Comment("List of cuts to apply")};
     fhicl::Table<PdfConfig> model{fhicl::Name("model"), fhicl::Comment("The PDF for the full final model to fit")};
+    fhicl::Atom<bool> unfold{fhicl::Name("unfold"), fhicl::Comment("Set to tru if you want to unfold the efficiency and response effects"), false};
     fhicl::Atom<bool> allow_failure{fhicl::Name("allow_failure"), fhicl::Comment("If set to true, then roofitter will not throw an exception for a failed fit."), false};
+    fhicl::Sequence<std::string> calculations{fhicl::Name("calculations"), fhicl::Comment("A list of supplemental calculations that you want to calculate"), std::vector<std::string>()};
   };
 
   class Analysis {
@@ -54,6 +56,8 @@ namespace roofitter {
     Components _components;
 
     TH1* _hist;
+
+    RooFitResult* _fitResult;
 
   public:
     Analysis(const AnalysisConfig& cfg) : 
@@ -82,68 +86,6 @@ namespace roofitter {
       factory_cmd.str("");
       factory_cmd << _anaConf.model().formula();
       _ws->factory(factory_cmd.str().c_str());
-    }
-
-    Analysis(std::string name, const mu2e::SimpleConfig& config) : 
-      name(name),
-      ws(new RooWorkspace(name.c_str(), true))
-    {
-      std::stringstream factory_cmd;
-      std::vector<std::string> all_obs_names;
-      config.getVectorString(name+".observables", all_obs_names);
-      if (all_obs_names.size()>2) {
-	throw cet::exception("Analysis::Analysis()") << "More than 2 observables is not currently supported";
-      }
-
-      // Construct all the observables
-      for (const auto& i_obs_name : all_obs_names) {
-	std::string eff_name = config.getString(name+"."+i_obs_name+".eff.name", "");
-	std::string res_name = config.getString(name+"."+i_obs_name+".res.name", "");
-	Observable i_obs(i_obs_name, eff_name, res_name, config, ws);
-	observables.push_back(i_obs);
-      }
-
-      // Construct the components
-      std::vector<std::string> all_comp_names;
-      config.getVectorString(name+".components", all_comp_names);
-      for (const auto& i_comp_name : all_comp_names) {
-	Component i_comp(i_comp_name, config, ws);
-
-	i_comp.constructPdfs(observables, config, ws);
-
-	components.push_back(i_comp);
-      }
-
-      
-      // Construct all the cuts
-      std::vector<std::string> all_cuts;
-      config.getVectorString(name+".cuts", all_cuts);
-      for (const auto& i_cut : all_cuts) {
-	std::string cutname = i_cut;
-	bool notted = false;
-	if (i_cut.at(0) == '!') { // if the user has not-ed this cut for the analysis
-	  notted = true;
-	  cutname = cutname.substr(1, cutname.size()-1);
-	}
-	std::string cut = config.getString("cut."+cutname);
-	if (notted) {
-	  cut = "!" + cut;
-	}
-	cuts.push_back(TCut(cut.c_str()));
-      }
-
-
-      // Construct the modelPdf
-      std::string pdf = config.getString(name+".model");
-      factory_cmd.str("");
-      factory_cmd << pdf;
-      ws->factory(factory_cmd.str().c_str());
-      modelPdf = "model";
-
-      // Construct all the calculations
-      config.getVectorString(name+".calculations", calcs, std::vector<std::string>()); // default is an empty string
-
-      //      allow_failure = config.getBool(name+".allow_failure", false);
     }
 
     TCut cutcmd() { 
@@ -181,7 +123,7 @@ namespace roofitter {
 	}
       }
 
-      std::string histname = "h_" + name;
+      std::string histname = "h_" + _anaConf.name();
       std::string draw = "";
       if (vars.getSize()==1) {
 	_hist = x_var->createHistogram(histname.c_str());
@@ -209,10 +151,10 @@ namespace roofitter {
       if (!model) {
 	throw cet::exception("Analysis::fit()") << "Can't find model \"" << _anaConf.model().name() << "\" in RooWorkspace";
       }
-      fitResult = model->fitTo(*data, RooFit::Save(), RooFit::Range("fit"), RooFit::Extended(true));
-      fitResult->printValue(std::cout);
+      _fitResult = model->fitTo(*data, RooFit::Save(), RooFit::Range("fit"), RooFit::Extended(true));
+      _fitResult->printValue(std::cout);
 
-      int status = fitResult->status();
+      int status = _fitResult->status();
       if (status>0) {
 	if (!_anaConf.allow_failure()) {
 	  throw cet::exception("Analysis::fitTo()") << "Fit failed! If you want roofitter to continue and not throw this exception then set allow_failure to true in your fcl file";
@@ -221,73 +163,63 @@ namespace roofitter {
     }
 
     void unfold() {
-      // Unfold efficiency
-      // should have an efficiency function and yields of each component as function of the observable
-      RooAddPdf* full_model = (RooAddPdf*) ws->pdf(modelPdf.c_str());
-      size_t i_element = 0;
-      for (const auto& i_comp : components) {
-	//	if (!i_comp.effPdfName.empty()) {
+      if (_anaConf.unfold()) {
+	// Unfold efficiency
+	// should have an efficiency function and yields of each component as function of the observable
+	RooAddPdf* full_model = (RooAddPdf*) _ws->pdf(_anaConf.model().name().c_str());
+	if (!full_model) {
+	  throw cet::exception("Analysis::unfold()") << "Can't find model \"" << _anaConf.model().name() << "\" in RooWorkspace";
+	}
+
+	size_t i_element = 0;
+	for (const auto& i_comp : _components) {
+	  //	if (!i_comp.effPdfName.empty()) {
 	  RooRealVar* i_comp_yield = (RooRealVar*) full_model->coefList().at(i_element);
 	  double i_comp_yield_val = i_comp_yield->getVal();
-	  double i_comp_yield_err = i_comp_yield->getPropagatedError(*fitResult);
-
-	  double effCorr = i_comp.getEffCorrection(observables.at(0), ws); //TODO: handle more than one dimension
+	  double i_comp_yield_err = i_comp_yield->getPropagatedError(*_fitResult);
+	  
+	  double effCorr = i_comp.getEffCorrection(_observables.at(0), _ws); //TODO: handle more than one dimension
 	  double i_comp_final_yield_val = i_comp_yield_val * effCorr;
 	  double i_comp_final_yield_err = (i_comp_yield_err / i_comp_yield_val) * i_comp_final_yield_val;
-
+	  
 	  std::string new_yield_name = i_comp_yield->GetName();
 	  new_yield_name += "Eff";
 	  RooRealVar* i_comp_final_yield = new RooRealVar(new_yield_name.c_str(), "", i_comp_final_yield_val);
 	  i_comp_final_yield->setError(i_comp_final_yield_err);
-	  ws->import(*i_comp_final_yield);
+	  _ws->import(*i_comp_final_yield);
 
-	  //	  std::cout << "AE: Initial : " << i_comp_yield_val << " +/- " << i_comp_yield_err << std::endl;
-	  //	  std::cout << "AE: --> Corrected : " << i_comp_final_yield_val << " +/- " << i_comp_final_yield_err << std::endl;
-	  //	}
+	  // Calculate the fraction of the tru spectrum that has smeared out
 
-	// Calculate the fraction of the tru spectrum that has smeared out
-	  //	if(!i_comp.resPdfName.empty()) {
-
-	  double frac_smeared_away = i_comp.getFracSmeared(observables.at(0), ws); // TODO: handle more than one dimension
+	  double frac_smeared_away = i_comp.getFracSmeared(_observables.at(0), _ws); // TODO: handle more than one dimension
 	  std::string frac_smeared_name = i_comp.getName() + "FracSmeared";
 	  RooRealVar* frac_smeared = new RooRealVar(frac_smeared_name.c_str(), "", frac_smeared_away);
 	  //	  unfold_eff_yield->setError(final_yield_err);
-	  ws->import(*frac_smeared);
+	  _ws->import(*frac_smeared);
 	  //	}
-	++i_element;
+	  ++i_element;
+	}
       }
     }
 
     void calculate() {
       std::stringstream factory_cmd;
-      for (const auto& i_calc : calcs) {
+      for (const auto& i_calc : _anaConf.calculations()) {
 	factory_cmd.str("");
 	factory_cmd << i_calc;
-	ws->factory(factory_cmd.str().c_str());
+	_ws->factory(factory_cmd.str().c_str());
       }
     }
 
     void Write() {
       _hist->Write();
       
-      fitResult->Write();
+      _fitResult->Write();
 
       _ws->Print();
       _ws->Write();
     }
 
     const AnalysisConfig& getConf() const { return _anaConf; }
-
-    std::string name;
-    std::vector<TCut> cuts;
-    TH1* hist;
-    RooWorkspace* ws;
-
-    PdfName modelPdf;
-    Observables observables;
-    Components components;
-    Calculations calcs;
-    RooFitResult* fitResult;
   };
 }
 

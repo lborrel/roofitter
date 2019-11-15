@@ -35,6 +35,8 @@ namespace roofitter {
     ComponentConfig _compConf;
 
   public:
+    std::string getName() const { return _compConf.name(); }
+
     Component (const ComponentConfig& cfg, RooWorkspace* ws, const Observables& observables) : _compConf(cfg) {
       std::stringstream factory_cmd;
 
@@ -99,62 +101,8 @@ namespace roofitter {
 	  }
 	}
       }
-    }
 
-    Component(const std::string& comp_name, const mu2e::SimpleConfig& config, RooWorkspace* ws) : name(comp_name) {
-    }
-
-    void constructPdfs(const Observables& all_obs, const mu2e::SimpleConfig& config, RooWorkspace* ws) {
-      std::stringstream factory_cmd;
-
-      int i_obs = -1;
-      for (const auto& obs : all_obs) {
-	++i_obs;
-	// Construct the true Pdf
-	std::string pdf = config.getString(name+"."+obs.getName()+".pdf");
-
-	factory_cmd.str("");
-	factory_cmd << pdf;
-	ws->factory(factory_cmd.str().c_str());
-
-	std::string truePdfName = name+obs.getName();
-	truePdfNames.insert(std::pair<ObsName, PdfName>(obs.getName(), truePdfName));
-	std::string effPdfName = "";
-	std::string resPdfName = "";
-
-	// Construct the Pdf with Eff, if possible
-	std::string currentPdfSuffix = "";
-	if(!obs.getEffName().empty()) {
-	  std::string this_suffix = "Eff";
-
-	  std::string currentPdfName = truePdfName + currentPdfSuffix;
-	  effPdfName = currentPdfName + this_suffix;
-	  effPdfNames.insert(std::pair<ObsName, PdfName>(obs.getName(), effPdfName));
-	    
-	  // Construct the Pdfs that include efficiency
-	  ws->import(*(new RooEffProd(effPdfName.c_str(), "", *ws->pdf(currentPdfName.c_str()), *ws->function(obs.getEffName().c_str()))));
-	  
-	  currentPdfSuffix += this_suffix;
-	}
-
-	// Construct the smeared pdf
-	if (!obs.getResName().empty()) {
-	  std::string this_suffix = "Res";
-	  std::string currentPdfName = truePdfName + currentPdfSuffix;
-	  resPdfName = currentPdfName + this_suffix;
-	  resPdfNames.insert(std::pair<ObsName, PdfName>(obs.getName(), resPdfName));
-	  
-	  factory_cmd.str("");
-	  factory_cmd << "FCONV::" << resPdfName << "(" << obs.getName() << ", " << currentPdfName << ", " << obs.getResName() << ")";
-	  ws->factory(factory_cmd.str().c_str());
-	
-	  ((RooFFTConvPdf*) ws->pdf(resPdfName.c_str()))->setBufferFraction(5.0);
-
-	  currentPdfSuffix += this_suffix;
-	}
-
-      }
-
+      /*
       // Now create 2D models from these
       if (all_obs.size()==2) {
 
@@ -198,21 +146,29 @@ namespace roofitter {
       if (all_obs.size()>2) {
 	throw cet::exception("Component::constructPdfs()") << "Do not currently support more than two observables";
       }
+      */
     }
 
     // Returns the efficiency correction to apply to any yield
     // (i.e. it is the efficiency 
     double getEffCorrection(const Observable& obs, RooWorkspace* ws) const {
 
-      RooAbsPdf* this_pdf = ws->pdf(resPdfNames.at(obs.getName()).c_str());
+      std::string resp_pdf_name = "";
+      for (const auto& i_fullPdf : _compConf.fullPdfs()) {
+	if (i_fullPdf.obsName() == obs.getName()) {
+	  resp_pdf_name = i_fullPdf.respPdfName();
+	}
+      }
+      
+      RooAbsPdf* this_pdf = ws->pdf(resp_pdf_name.c_str());
       RooRealVar* this_obs = ws->var(obs.getName().c_str());
       RooFormulaVar* effFunc = (RooFormulaVar*) ws->function(obs.getEffName().c_str());
       TF1* effFn = effFunc->asTF(*this_obs, RooArgList(), RooArgList());
 
       double result = 0;
-      double min_obs = obs.getHistMin();
-      double max_obs = obs.getHistMax();
-      double obs_step = obs.getHistBinWidth();
+      double min_obs = obs.getMin();
+      double max_obs = obs.getMax();
+      double obs_step = obs.getBinWidth();
       for (double i_obs = min_obs; i_obs < max_obs; i_obs += obs_step) {
 	double j_obs = i_obs + obs_step;
 	    
@@ -234,23 +190,30 @@ namespace roofitter {
     // Returns the fraction of the true pdf that has smeared out
     double getFracSmeared(const Observable& obs, RooWorkspace* ws) const {
 
+      std::string true_pdf_name = "";
+      for (const auto& i_fullPdf : _compConf.fullPdfs()) {
+	if (i_fullPdf.obsName() == obs.getName()) {
+	  true_pdf_name = i_fullPdf.pdf().name();
+	}
+      }
+
       RooRealVar* this_obs = ws->var(obs.getName().c_str());
       if (!this_obs) {
 	throw cet::exception("Component::getFracSmeared") << "Could not find observable \"" << obs.getName() << "\" in RooWorkspace";
       }
-      RooAbsPdf* truePdf = ws->pdf(truePdfNames.at(obs.getName()).c_str());
+      RooAbsPdf* truePdf = ws->pdf(true_pdf_name.c_str());
       if (!truePdf) {
-	throw cet::exception("Component::getFracSmeared") << "Could not find truePdf \"" << name << "\" in RooWorkspace";
+	throw cet::exception("Component::getFracSmeared") << "Could not find truePdf \"" << true_pdf_name << "\" in RooWorkspace";
       }
-      RooAbsPdf* resPdf = ws->pdf(obs.getResName().c_str());
-      if (!resPdf) {
-	throw cet::exception("Component::getFracSmeared") << "Could not find resPdf \"" << obs.getResName() << "\" in RooWorkspace";
+      RooAbsPdf* respPdf = ws->pdf(obs.getRespName().c_str());
+      if (!respPdf) {
+	throw cet::exception("Component::getFracSmeared") << "Could not find respPdf \"" << obs.getRespName() << "\" in RooWorkspace";
       }
-      double min_res = obs.getResValidMin(); double max_res = obs.getResValidMax();
+      double min_res = obs.getRespValidMin(); double max_res = obs.getRespValidMax();
 
       double result = 0;
-      double min_obs = obs.getHistMin(); double max_obs = obs.getHistMax();
-      double obs_step = obs.getHistBinWidth();
+      double min_obs = obs.getMin(); double max_obs = obs.getMax();
+      double obs_step = obs.getBinWidth();
 
       std::cout << "getFracSmeared() might take a while..." << std::endl;
       for (double i_obs = min_obs; i_obs < max_obs; i_obs += obs_step) {
@@ -263,29 +226,29 @@ namespace roofitter {
 	this_obs->setMax(max_res);	    
 	double min_res_smear = min_res;
 	double max_res_smear = min_obs-j_obs;
-	double resPdf_integral_low_val = 0;
+	double respPdf_integral_low_val = 0;
 	if (max_res_smear > min_res_smear) {
 	  this_obs->setRange("resRange", min_res_smear, max_res_smear);
-	  RooAbsReal* resPdf_integral_low = resPdf->createIntegral(*this_obs, RooFit::NormSet(*this_obs), RooFit::Range("resRange"));
-	  resPdf_integral_low_val = resPdf_integral_low->getVal();
-	  std::cout << "Res Smear Integral Low (" << min_res_smear << " MeV -- " << max_res_smear << " MeV) = " << resPdf_integral_low_val << std::endl;
+	  RooAbsReal* respPdf_integral_low = respPdf->createIntegral(*this_obs, RooFit::NormSet(*this_obs), RooFit::Range("resRange"));
+	  respPdf_integral_low_val = respPdf_integral_low->getVal();
+	  std::cout << "Res Smear Integral Low (" << min_res_smear << " MeV -- " << max_res_smear << " MeV) = " << respPdf_integral_low_val << std::endl;
 	}
 
 	// How much will be smeared out the top
 	min_res_smear = max_obs-j_obs;
 	max_res_smear = max_res;
-	double resPdf_integral_high_val = 0;
+	double respPdf_integral_high_val = 0;
 	if (max_res_smear > min_res_smear) {
 	  this_obs->setRange("resRange", min_res_smear, max_res_smear);
-	  RooAbsReal* resPdf_integral_high = resPdf->createIntegral(*this_obs, RooFit::NormSet(*this_obs), RooFit::Range("resRange"));
-	  resPdf_integral_high_val = resPdf_integral_high->getVal();
-	  std::cout << "Res Smear Integral High (" << min_res_smear << " MeV -- " << max_res_smear << " MeV) = " << resPdf_integral_high_val << std::endl;
+	  RooAbsReal* respPdf_integral_high = respPdf->createIntegral(*this_obs, RooFit::NormSet(*this_obs), RooFit::Range("resRange"));
+	  respPdf_integral_high_val = respPdf_integral_high->getVal();
+	  std::cout << "Res Smear Integral High (" << min_res_smear << " MeV -- " << max_res_smear << " MeV) = " << respPdf_integral_high_val << std::endl;
 	}
 
 	// Reset the limits here so that they are correct when we exit the for loop
 	this_obs->setMax(max_obs);
 	this_obs->setMin(min_obs);
-	if (resPdf_integral_low_val>1e-4 || resPdf_integral_high_val>1e-4) { // only calculate the truth if we have to
+	if (respPdf_integral_low_val>1e-4 || respPdf_integral_high_val>1e-4) { // only calculate the truth if we have to
 	  // How much of the truth is here?
 	  this_obs->setRange("new", i_obs, j_obs);
 	  RooAbsReal* truePdf_integral = truePdf->createIntegral(*this_obs, RooFit::NormSet(*this_obs), RooFit::Range("new"));
@@ -294,7 +257,7 @@ namespace roofitter {
 	  //	if(truePdf_integral_val<1e-3) {
 	  //	  break;
 	  //	}
-	  double smeared_away = (resPdf_integral_low_val + resPdf_integral_high_val) * truePdf_integral_val;
+	  double smeared_away = (respPdf_integral_low_val + respPdf_integral_high_val) * truePdf_integral_val;
 	  std::cout << "Fraction Smeared Away = " << smeared_away << std::endl;
 	  result += smeared_away;
 	}
@@ -305,14 +268,6 @@ namespace roofitter {
 
       return result;
     }
-
-    std::string getName() const { return name; }
-
-  private:
-    std::string name;
-    std::map<ObsName, PdfName> truePdfNames;
-    std::map<ObsName, PdfName> effPdfNames;
-    std::map<ObsName, PdfName> resPdfNames;
   };
   typedef std::vector<Component> Components;
 }
