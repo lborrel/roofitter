@@ -1,6 +1,5 @@
-void plot_cemDioCrv_mom_wResEff() {
+void plot_cemDioCrv_mom(std::string filename) {
 
-  std::string filename = "fcl-test7.root";
   TFile* file = new TFile(filename.c_str(), "READ");
   
   RooWorkspace* ws = (RooWorkspace*) file->Get("cemDioCrv_mom/cemDioCrv_mom");
@@ -34,6 +33,35 @@ void plot_cemDioCrv_mom_wResEff() {
     c->GetPad(1)->SetLogy();
     c->cd(1);
   plot->Draw();  
+  TLatex* latex = new TLatex();
+  latex->SetTextAlign(22);
+  latex->SetTextSize(0.06);
+  std::stringstream text;
+  double ndc_x = 0.7;
+  double first_ndc_y = 0.6;
+  double step_ndc_y = -0.05;
+  double current_ndc_y = first_ndc_y;
+  text.str("");
+  text << std::fixed << std::setprecision(1);
+  text << "N Ce = " << NCe->getVal() << " #pm " << NCe->getError();
+  latex->SetTextColor(kRed);
+  latex->DrawLatexNDC(ndc_x, current_ndc_y, text.str().c_str());
+  current_ndc_y += step_ndc_y;
+
+  text.str("");
+  text << std::fixed << std::setprecision(1);
+  text << "N DIO = " << NDio->getVal() << " #pm " << NDio->getError();
+  latex->SetTextColor(kBlue);
+  latex->DrawLatexNDC(ndc_x, current_ndc_y, text.str().c_str());
+  current_ndc_y += step_ndc_y;
+
+  text.str("");
+  text << std::fixed << std::setprecision(1);
+  text << "N CRV = " << NCrv->getVal() << " #pm " << NCrv->getError();
+  latex->SetTextColor(kMagenta);
+  latex->DrawLatexNDC(ndc_x, current_ndc_y, text.str().c_str());
+  current_ndc_y += step_ndc_y;
+
     c->cd(2);
     RooPlot* mom_pull_frame = mom->frame();
     mom_pull_frame->addPlotable(mom_pull, "P");
