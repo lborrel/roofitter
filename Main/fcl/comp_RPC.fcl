@@ -1,0 +1,28 @@
+//////////////////////////////////////
+// A fcl files for the RPC component.
+// 
+
+BEGIN_PROLOG
+
+// Flat (momentum only atm)
+RPC : {
+    name : "RPC"
+    fullPdfs : [
+		{
+		    obsName : "mom"
+		    pdf : {
+			name : "RPCmom"
+			formula : "RooRPCPdf::RPCmom(mom, p0[1.908], p1[9.855], p2[135.7], p3[-18.21], p4[0.6085], p5[0.9408])"
+		    }
+		    incEffModel : true
+		    effPdfName : "RPCmomEff"
+		    
+		    incRespModel : true
+		    respPdfName : "RPCmomEffResp"
+
+		    integrator : "RooMCIntegrator"
+		}
+		]
+}
+
+END_PROLOG
