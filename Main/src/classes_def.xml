@@ -2,4 +2,5 @@
  <class name="RooCeMPdf" />
  <class name="RooPol58" />
  <class name="RooDSCB" />
+ <class name="RooRPCPdf" />
 </lcgdict>

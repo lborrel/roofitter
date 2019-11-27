@@ -1,0 +1,35 @@
+//////////////////////////////////////
+// A fcl files for the RPC component.
+// 
+
+BEGIN_PROLOG
+
+// Flat momentum, exponential in t0
+rpc : {
+    name : "rpc"
+    fullPdfs : [
+		{
+		    obsName : "mom"
+		    pdf : {
+			name : "rpcmom"
+			formula : "RooRPCPdf::rpcmom(mom, p0[1.908], p1[9.855], p2[135.7], p3[-18.21], p4[0.6085], p5[0.9408])"
+		    }
+		    incEffModel : true
+		    effPdfName : "rpcmomEff"
+		    
+		    incRespModel : true
+		    respPdfName : "rpcmomEffResp"
+
+            integrator : "RooMCIntegrator"
+		},
+		{
+		    obsName : "t0"
+		    pdf : {
+			name : "rpcExpt0"
+			formula : "Exponential::rpcExpt0(t0, muLife[-0.001157])"
+		    }
+		}
+		]
+}
+
+END_PROLOG
