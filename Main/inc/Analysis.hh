@@ -4,6 +4,7 @@
 #include "TFile.h"
 #include "TH1.h"
 #include "TF1.h"
+#include "TLeaf.h"
 
 #include "RooWorkspace.h"
 #include "RooDataHist.h"
@@ -22,6 +23,8 @@
 #include "Main/inc/Configs.hh"
 #include "Main/inc/Observable.hh"
 #include "Main/inc/Component.hh"
+
+#include <string>
 
 namespace roofitter {
 
@@ -99,6 +102,47 @@ namespace roofitter {
 	}
       }
       return result;
+    }
+
+    TTree* flattenTree(TTree* tree)
+    {
+        std::vector<std::string> branchleaf;
+        TFile *file = new TFile("trkana_flat.root", "RECREATE");
+        TTree *tree_flat = new TTree("trkana_flat", "flatten trkana tree");
+
+        for (unsigned int i_obs = 0; i_obs < _observables.size(); ++i_obs)
+        {
+            auto& obs_conf = _observables[i_obs].getConf();
+            branchleaf.push_back(obs_conf.leaf());
+            std::string branch_name, leaf_name;
+            // Replace the "." by a "/" in the string to create the leaf later; also extract the name of the branch and the name of the leaf
+            for (unsigned int c = 0; c < branchleaf[i_obs].length(); ++c)
+            {
+                if (branchleaf[i_obs][c] == '.')
+                {
+                    branchleaf[i_obs][c] = '/';
+                    branch_name = branchleaf[i_obs].substr(0, c);
+                    leaf_name = branchleaf[i_obs].substr(c+1, branchleaf[i_obs].length());
+                }
+            }
+
+            Float_t var;
+            tree_flat->Branch((branch_name+leaf_name).c_str(), &var, (branch_name+leaf_name+"/F").c_str());
+            TLeaf *leaf = tree->GetLeaf(branchleaf[i_obs].c_str());
+
+            Int_t n_entries = (Int_t) tree->GetEntries();
+            for (Int_t i = 0; i < n_entries; i++)
+            {
+                tree->GetEntry(i);
+                var = leaf->GetValue();
+                tree_flat->Fill();
+            }
+        }
+
+        tree_flat->Write();
+        file->Write();
+
+        return tree_flat;
     }
 
     void fillData(TTree* tree) {
