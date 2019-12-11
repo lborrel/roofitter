@@ -5,6 +5,7 @@
 #include "TH1.h"
 #include "TF1.h"
 #include "TLeaf.h"
+#include "TTreeFormula.h"
 
 #include "RooWorkspace.h"
 #include "RooDataHist.h"
@@ -107,6 +108,8 @@ namespace roofitter {
     TTree* flattenTree(TTree* tree)
     {
         std::vector<std::string> branchleaf;
+        std::vector<Float_t> vars(_observables.size());
+        std::vector<TLeaf *> leaves;
         TFile *file = new TFile("trkana_flat.root", "RECREATE");
         TTree *tree_flat = new TTree("trkana_flat", "flatten trkana tree");
 
@@ -126,16 +129,24 @@ namespace roofitter {
                 }
             }
 
-            Float_t var;
-            tree_flat->Branch((branch_name+leaf_name).c_str(), &var, (branch_name+leaf_name+"/F").c_str());
-            TLeaf *leaf = tree->GetLeaf(branchleaf[i_obs].c_str());
+            tree_flat->Branch((branch_name+leaf_name).c_str(), &vars[i_obs], (branch_name+leaf_name+"/F").c_str());
+            leaves.push_back(tree->GetLeaf(branchleaf[i_obs].c_str()));
+        }
 
-            Int_t n_entries = (Int_t) tree->GetEntries();
-            for (Int_t i = 0; i < n_entries; i++)
+        // Formula for the cut to apply on the tree
+        TTreeFormula *cut_formula = new TTreeFormula("cut", cutcmd(), tree);
+
+        Int_t n_entries = (Int_t) tree->GetEntries();
+        for (Int_t i = 0; i < n_entries; i++)
+        {
+            for (unsigned int i_obs = 0; i_obs < _observables.size(); ++i_obs)
             {
                 tree->GetEntry(i);
-                var = leaf->GetValue();
-                tree_flat->Fill();
+                if (cut_formula->EvalInstance() == 1)
+                {
+                    vars[i_obs] = leaves[i_obs]->GetValue();
+                    tree_flat->Fill();
+                }
             }
         }
 
@@ -185,7 +196,11 @@ namespace roofitter {
 
       tree->Draw(draw.c_str(), cutcmd(), "goff");
 
-      _ws->import(*(new RooDataHist("data", "data", vars, RooFit::Import(*_hist))));
+      TTree *flat_tree = flattenTree(tree);
+      flat_tree->Print();
+
+//      _ws->import(*(new RooDataHist("data", "data", vars, RooFit::Import(*_hist))));
+      _ws->import(*(new RooDataHist("data", "data", vars, RooFit::Import(*tree))));
     }
 
 

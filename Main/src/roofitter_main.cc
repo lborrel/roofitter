@@ -187,8 +187,8 @@ namespace roofitter {
     std::vector<Analysis> analyses;
     for (auto& i_ana_cfg : analysis_cfgs) {
       Analysis i_ana(i_ana_cfg);
-      TTree* flat_tree = i_ana.flattenTree(tree);
-      flat_tree->Print();
+//      TTree* flat_tree = i_ana.flattenTree(tree);
+//      flat_tree->Print();
       i_ana.fillData(tree);
       i_ana.fit();
       i_ana.unfold();
