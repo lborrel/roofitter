@@ -9,6 +9,7 @@
 
 #include "RooWorkspace.h"
 #include "RooDataHist.h"
+#include "RooDataSet.h"
 #include "RooPlot.h"
 #include "RooAddPdf.h"
 #include "RooFFTConvPdf.h"
@@ -107,6 +108,44 @@ namespace roofitter {
 
     TTree* flattenTree(TTree* tree)
     {
+        std::string branchleaf;
+        Float_t var;
+        TLeaf *leaf;
+        TFile *file = new TFile("trkana_flat.root", "RECREATE");
+        TTree *tree_flat = new TTree("trkana_flat", "flatten trkana tree");
+
+        auto& obs_conf = _observables[0].getConf();
+        branchleaf = obs_conf.leaf();
+        std::string branch_name, leaf_name;
+        // Replace the "." by a "/" in the string to create the leaf later; also extract the name of the branch and the name of the leaf
+        for (unsigned int c = 0; c < branchleaf.length(); ++c)
+        {
+            if (branchleaf[c] == '.')
+            {
+                branchleaf[c] = '/';
+                branch_name = branchleaf.substr(0, c);
+                leaf_name = branchleaf.substr(c+1, branchleaf.length());
+            }
+        }
+
+        tree_flat->Branch((branch_name+leaf_name).c_str(), &var, (branch_name+leaf_name+"/F").c_str());
+        leaf = tree->GetLeaf(branchleaf.c_str());
+
+        // Formula for the cut to apply on the tree
+        TTreeFormula *cut_formula = new TTreeFormula("cut", cutcmd(), tree);
+
+        Int_t n_entries = (Int_t) tree->GetEntries();
+        for (Int_t i = 0; i < n_entries; i++)
+        {
+            tree->GetEntry(i);
+            if (cut_formula->EvalInstance() == 1)
+            {
+                var = leaf->GetValue();
+                tree_flat->Fill();
+            }
+        }
+
+/*
         std::vector<std::string> branchleaf;
         std::vector<Float_t> vars(_observables.size());
         std::vector<TLeaf *> leaves;
@@ -136,6 +175,7 @@ namespace roofitter {
         // Formula for the cut to apply on the tree
         TTreeFormula *cut_formula = new TTreeFormula("cut", cutcmd(), tree);
 
+        std::cout << "size vars: " << vars.size() << std::endl;
         Int_t n_entries = (Int_t) tree->GetEntries();
         for (Int_t i = 0; i < n_entries; i++)
         {
@@ -144,12 +184,13 @@ namespace roofitter {
                 tree->GetEntry(i);
                 if (cut_formula->EvalInstance() == 1)
                 {
+                    std::cout << "index: " << i_obs << std::endl;
                     vars[i_obs] = leaves[i_obs]->GetValue();
                     tree_flat->Fill();
                 }
             }
         }
-
+*/
         tree_flat->Write();
         file->Write();
 
@@ -158,13 +199,13 @@ namespace roofitter {
 
     void fillData(TTree* tree) {
 
-      RooArgSet vars;
-      RooRealVar* x_var = 0;
-      RooRealVar* y_var = 0;
-      std::string x_leaf = "";
-      std::string y_leaf = "";
-      for (const auto& i_obs : _observables) {
-	const auto& i_obs_conf = i_obs.getConf();
+    RooArgSet vars;
+    RooRealVar* x_var = 0;
+    RooRealVar* y_var = 0;
+    std::string x_leaf = "";
+    std::string y_leaf = "";
+    for (const auto& i_obs : _observables) {
+    const auto& i_obs_conf = i_obs.getConf();
 	RooRealVar* var = _ws->var(i_obs_conf.name().c_str());
 	vars.add(*var);
 
@@ -200,7 +241,7 @@ namespace roofitter {
       flat_tree->Print();
 
 //      _ws->import(*(new RooDataHist("data", "data", vars, RooFit::Import(*_hist))));
-      _ws->import(*(new RooDataHist("data", "data", vars, RooFit::Import(*tree))));
+      _ws->import(*(new RooDataSet("data", "data", vars, RooFit::Import(*flat_tree))));
     }
 
 
