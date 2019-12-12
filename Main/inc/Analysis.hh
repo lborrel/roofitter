@@ -43,6 +43,7 @@ namespace roofitter {
 
   struct AnalysisConfig {
     fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Analysis name")};
+    fhicl::Atom<std::string> fit_type{fhicl::Name("fit_type"), fhicl::Comment("Choose between binned and unbinned fit")};
     fhicl::Sequence< fhicl::Table<ObservableConfig> > observables{fhicl::Name("observables"), fhicl::Comment("List of observables")};
     fhicl::Sequence< fhicl::Table<ComponentConfig> > components{fhicl::Name("components"), fhicl::Comment("List of components")};
     fhicl::Sequence< fhicl::Table<CutConfig> > cuts{fhicl::Name("cuts"), fhicl::Comment("List of cuts to apply")};
@@ -205,44 +206,50 @@ namespace roofitter {
     std::string x_leaf = "";
     std::string y_leaf = "";
     for (const auto& i_obs : _observables) {
-    const auto& i_obs_conf = i_obs.getConf();
-	RooRealVar* var = _ws->var(i_obs_conf.name().c_str());
-	vars.add(*var);
+        const auto& i_obs_conf = i_obs.getConf();
+	    RooRealVar* var = _ws->var(i_obs_conf.name().c_str());
+	    vars.add(*var);
 
-	if (x_leaf.empty()) {
-	  x_leaf = i_obs_conf.leaf();
-	  x_var = var;
-	}
-	else if (y_leaf.empty()) {
-	  y_leaf = i_obs_conf.leaf();
-	  y_var = var;
-	}
-      }
-
-      std::string histname = "h_" + _anaConf.name();
-      std::string draw = "";
-      if (vars.getSize()==1) {
-	_hist = x_var->createHistogram(histname.c_str());
-	draw = x_leaf;
-      }
-      else if (vars.getSize()==2) {
-	_hist = x_var->createHistogram(histname.c_str(), RooFit::YVar(*y_var));
-	draw = y_leaf+":"+x_leaf;
-      }
-      else {
-	throw cet::exception("Analysis::fillData()") << "Can't create histogram with more than two axes";
-      }
-      draw += ">>";
-      draw += _hist->GetName();
-
-      tree->Draw(draw.c_str(), cutcmd(), "goff");
-
-      TTree *flat_tree = flattenTree(tree);
-      flat_tree->Print();
-
-//      _ws->import(*(new RooDataHist("data", "data", vars, RooFit::Import(*_hist))));
-      _ws->import(*(new RooDataSet("data", "data", vars, RooFit::Import(*flat_tree))));
+	    if (x_leaf.empty()) {
+	        x_leaf = i_obs_conf.leaf();
+	        x_var = var;
+	    }
+	    else if (y_leaf.empty()) {
+	        y_leaf = i_obs_conf.leaf();
+	    y_var = var;
+	    }
     }
+
+    std::string histname = "h_" + _anaConf.name();
+    std::string draw = "";
+    if (vars.getSize()==1) {
+	    _hist = x_var->createHistogram(histname.c_str());
+	    draw = x_leaf;
+    }
+    else if (vars.getSize()==2) {
+	    _hist = x_var->createHistogram(histname.c_str(), RooFit::YVar(*y_var));
+	    draw = y_leaf+":"+x_leaf;
+    }
+    else {
+	    throw cet::exception("Analysis::fillData()") << "Can't create histogram with more than two axes";
+    }
+    draw += ">>";
+    draw += _hist->GetName();
+
+    tree->Draw(draw.c_str(), cutcmd(), "goff");
+
+    TTree *flat_tree = flattenTree(tree);
+    flat_tree->Print();
+
+    if (_anaConf.fit_type() == "binned")
+    {
+        _ws->import(*(new RooDataHist("data", "data", vars, RooFit::Import(*_hist))));
+    }
+    else if (_anaConf.fit_type() == "unbinned")
+    {
+        _ws->import(*(new RooDataSet("data", "data", vars, RooFit::Import(*flat_tree))));
+    }
+}
 
 
     void fit() {

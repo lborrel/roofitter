@@ -13,6 +13,7 @@
 BEGIN_PROLOG
 cemDioRPC_mom : {
     name : "cemDioRPC_mom"
+    fit_type : "binned"
     observables : [ @local::mom ]
     components : [ @local::cemLL, @local::dioPol58, @local::RPC , @local::crvFlat]
     cuts :@local::CD3CutsNoCRV
