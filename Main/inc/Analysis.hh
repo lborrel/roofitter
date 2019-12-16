@@ -208,6 +208,7 @@ namespace roofitter {
     for (const auto& i_obs : _observables) {
         const auto& i_obs_conf = i_obs.getConf();
 	    RooRealVar* var = _ws->var(i_obs_conf.name().c_str());
+        std::cout << "RooRealVar: " << var->getValV() << std::endl;
 	    vars.add(*var);
 
 	    if (x_leaf.empty()) {
@@ -220,40 +221,59 @@ namespace roofitter {
 	    }
     }
 
-    std::string histname = "h_" + _anaConf.name();
-    std::string draw = "";
-    if (vars.getSize()==1) {
-	    _hist = x_var->createHistogram(histname.c_str());
-	    draw = x_leaf;
-    }
-    else if (vars.getSize()==2) {
-	    _hist = x_var->createHistogram(histname.c_str(), RooFit::YVar(*y_var));
-	    draw = y_leaf+":"+x_leaf;
-    }
-    else {
-	    throw cet::exception("Analysis::fillData()") << "Can't create histogram with more than two axes";
-    }
-    draw += ">>";
-    draw += _hist->GetName();
-
-    tree->Draw(draw.c_str(), cutcmd(), "goff");
-
-    TTree *flat_tree = flattenTree(tree);
-    flat_tree->Print();
-
     if (_anaConf.fit_type() == "binned")
     {
+        std::string histname = "h_" + _anaConf.name();
+        std::string draw = "";
+        if (vars.getSize()==1) {
+	        _hist = x_var->createHistogram(histname.c_str());
+	        draw = x_leaf;
+        }
+        else if (vars.getSize()==2) {
+	        _hist = x_var->createHistogram(histname.c_str(), RooFit::YVar(*y_var));
+	        draw = y_leaf+":"+x_leaf;
+        }
+        else {
+            throw cet::exception("Analysis::fillData()") << "Can't create histogram with more than two axes";
+        }
+        draw += ">>";
+        draw += _hist->GetName();
+
+        tree->Draw(draw.c_str(), cutcmd(), "goff");
+
         _ws->import(*(new RooDataHist("data", "data", vars, RooFit::Import(*_hist))));
     }
     else if (_anaConf.fit_type() == "unbinned")
     {
-        _ws->import(*(new RooDataSet("data", "data", vars, RooFit::Import(*flat_tree))));
+        TFile *file_flat = new TFile("trkana_flat.root");
+        TTree *flat_tree = (TTree*) file_flat->Get("trkana_flat");
+        flat_tree->Print();
+        flat_tree->Show(0);
+        RooRealVar *deentmom = new RooRealVar("deentmom", "deentmom", 95, 115);
+
+        RooDataSet unbinned_data("unbinned_data", "unbinned dataset", flat_tree, *deentmom);
+        _ws->import(unbinned_data);
     }
 }
 
 
     void fit() {
-      RooAbsData* data = _ws->data("data");
+
+      RooAbsData *data;
+
+      if (_anaConf.fit_type() == "binned")
+      {
+        data = _ws->data("data");
+      }
+      else if (_anaConf.fit_type() == "unbinned")
+      {
+        data = _ws->data("unbinned_data");
+      }
+      else
+      {
+        throw cet::exception("Analysis::fit()") << "Incorrect fit type";
+      }
+
       RooAbsPdf* model = _ws->pdf(_anaConf.model().name().c_str());
       if (!model) {
 	throw cet::exception("Analysis::fit()") << "Can't find model \"" << _anaConf.model().name() << "\" in RooWorkspace";
@@ -318,7 +338,10 @@ namespace roofitter {
     }
 
     void Write() {
-      _hist->Write();
+      if (_anaConf.fit_type() == "binned")
+      {
+        _hist->Write();
+      }
       
       _fitResult->Write();
 

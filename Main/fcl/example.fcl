@@ -15,10 +15,15 @@ analyses : [ @local::cemDio_mom ]
 
 // Can define input and output files here or with command line arguments
 input : {
-    filename : ""
-    treename : ""
+    filename : "/mu2e/data/users/lborrel/roofitter/trkana7.root"
+    treename : "TrkAnaNeg/trkana"
 }
 
 output : {
-    filename : ""
+    filename : "ana.root"
+}
+
+// Name of the root file containing the flat tree data
+flat_tree : {
+    filename : "trkana_flat.root"
 }

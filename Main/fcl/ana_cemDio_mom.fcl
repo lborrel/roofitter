@@ -12,7 +12,7 @@
 BEGIN_PROLOG
 cemDio_mom : {
     name : "cemDio_mom"
-    fit_type : "binned"
+    fit_type : "unbinned"
     observables : [ @local::mom ]
     components : [ @local::cemLL, @local::dioPol58 ]
     cuts : @local::AllCD3Cuts
