@@ -129,7 +129,7 @@ namespace roofitter {
             }
         }
 
-        tree_flat->Branch((branch_name+leaf_name).c_str(), &var, (branch_name+leaf_name+"/F").c_str());
+        tree_flat->Branch(leaf_name.c_str(), &var, (leaf_name+"/F").c_str());
         leaf = tree->GetLeaf(branchleaf.c_str());
 
         // Formula for the cut to apply on the tree
@@ -208,7 +208,6 @@ namespace roofitter {
     for (const auto& i_obs : _observables) {
         const auto& i_obs_conf = i_obs.getConf();
 	    RooRealVar* var = _ws->var(i_obs_conf.name().c_str());
-        std::cout << "RooRealVar: " << var->getValV() << std::endl;
 	    vars.add(*var);
 
 	    if (x_leaf.empty()) {
@@ -247,12 +246,11 @@ namespace roofitter {
     {
         TFile *file_flat = new TFile("trkana_flat.root");
         TTree *flat_tree = (TTree*) file_flat->Get("trkana_flat");
-        flat_tree->Print();
-        flat_tree->Show(0);
-        RooRealVar *deentmom = new RooRealVar("deentmom", "deentmom", 95, 115);
+        RooRealVar *mom = new RooRealVar("mom", "mom", 95, 115);
 
-        RooDataSet unbinned_data("unbinned_data", "unbinned dataset", flat_tree, *deentmom);
-        _ws->import(unbinned_data);
+//        TTreeFormula *cut_formula = new TTreeFormula("cut", cutcmd(), tree);
+        RooDataSet data("data", "unbinned dataset", flat_tree, *mom);
+        _ws->import(data);
     }
 }
 
@@ -260,19 +258,7 @@ namespace roofitter {
     void fit() {
 
       RooAbsData *data;
-
-      if (_anaConf.fit_type() == "binned")
-      {
-        data = _ws->data("data");
-      }
-      else if (_anaConf.fit_type() == "unbinned")
-      {
-        data = _ws->data("unbinned_data");
-      }
-      else
-      {
-        throw cet::exception("Analysis::fit()") << "Incorrect fit type";
-      }
+      data = _ws->data("data");
 
       RooAbsPdf* model = _ws->pdf(_anaConf.model().name().c_str());
       if (!model) {
