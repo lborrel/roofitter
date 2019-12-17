@@ -38,7 +38,6 @@ namespace roofitter {
     std::string input_filename;
     std::string input_treename;
     std::string output_filename;
-    std::string flattree_filename;
   };
 
   struct InputConfig {
@@ -50,14 +49,9 @@ namespace roofitter {
     fhicl::Atom<std::string> filename{fhicl::Name("filename"), fhicl::Comment("Output file name")};
   };
 
-  struct FlatTreeConfig {
-    fhicl::Atom<std::string> filename{fhicl::Name("filename"), fhicl::Comment("flat tree data file name")};
-  };
-
   struct Config {
     fhicl::Table<InputConfig> input{fhicl::Name("input"), fhicl::Comment("Configuration of input file")};
     fhicl::Table<OutputConfig> output{fhicl::Name("output"), fhicl::Comment("Configuration of output file")};
-    fhicl::Table<FlatTreeConfig> flat_tree{fhicl::Name("flat_tree"), fhicl::Comment("Configuration of flat tree data file")};
     fhicl::Sequence< fhicl::Table<AnalysisConfig> > analyses{fhicl::Name("analyses"), fhicl::Comment("List of analyses")};
   };
 
@@ -76,20 +70,18 @@ namespace roofitter {
     std::cout << "\t-i, --input [root file]: input ROOT file containing the tree (overrides anything in cfg file)" << std::endl;
     std::cout << "\t-t, --tree [tree name]: tree name (inc. directory) in the input file (overrides anything in cfg file)" << std::endl;
     std::cout << "\t-o, --output [root file]: output ROOT file that will be created (overrides anything in cfg file)" << std::endl;
-    std::cout << "\t-f, --flattree [root file]: ROOT file containing the flat tree data that will be created (overrides anything in cfg file)" << std::endl;
     std::cout << "\t-d, --debug-config [filename]: print out the final config file to file" << std::endl;
     std::cout << "\t-h, --help: print this help message" << std::endl;
   }
 
   void ProcessArgs(int argc, char** argv, InputArgs& args) {
-    const char* const short_opts = "c:i:t:o:f:d:h";
+    const char* const short_opts = "c:i:t:o:d:h";
 
     const option long_opts[] = {
       {"config", required_argument, nullptr, 'c'},
       {"input", required_argument, nullptr, 'i'},
       {"tree", required_argument, nullptr, 't'},
       {"output", required_argument, nullptr, 'o'},
-      {"flat_tree", required_argument, nullptr, 'f'},
       {"debug-config", required_argument, nullptr, 'd'},
       {"help", no_argument, nullptr, 'h'},
       {nullptr, no_argument, nullptr, 0}
@@ -117,10 +109,6 @@ namespace roofitter {
 
       case 'o':
 	args.output_filename = std::string(optarg);
-	break;
-
-      case 'f':
-	args.flattree_filename = std::string(optarg);
 	break;
 
       case 'd':
@@ -193,18 +181,6 @@ namespace roofitter {
     TTree* tree = (TTree*) file->Get(treename.c_str());
     if (!tree) {
       throw cet::exception("roofitter::main") << "Input tree " << treename << " is not in file";
-    }
-
-    std::string flattreename = config().flat_tree().filename();
-    if (!args.flattree_filename.empty()) { // override cfg file with
-      filename = args.input_filename;
-    }
-    if (flattreename.empty()) {
-      throw cet::exception("roofitter::main()") << "No filename specified";
-    }
-    TFile* flat_tree_file = new TFile(flattreename.c_str(), "READ");
-    if (flat_tree_file->IsZombie()) {
-      throw cet::exception("roofitter::main()") << "flat tree file " << flattreename << " is a zombie";
     }
 
     std::vector<AnalysisConfig> analysis_cfgs = config().analyses();

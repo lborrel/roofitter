@@ -13,6 +13,7 @@ BEGIN_PROLOG
 cemDio_mom : {
     name : "cemDio_mom"
     fit_type : "unbinned"
+    flat_tree_filename : "trkana_flat.root"
     observables : [ @local::mom ]
     components : [ @local::cemLL, @local::dioPol58 ]
     cuts : @local::AllCD3Cuts

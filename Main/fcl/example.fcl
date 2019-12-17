@@ -22,8 +22,3 @@ input : {
 output : {
     filename : "ana.root"
 }
-
-// Name of the root file containing the flat tree data
-flat_tree : {
-    filename : "trkana_flat.root"
-}

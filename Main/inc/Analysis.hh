@@ -44,6 +44,7 @@ namespace roofitter {
   struct AnalysisConfig {
     fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Analysis name")};
     fhicl::Atom<std::string> fit_type{fhicl::Name("fit_type"), fhicl::Comment("Choose between binned and unbinned fit")};
+    fhicl::Atom<std::string> flat_tree_filename{fhicl::Name("flat_tree_filename"), fhicl::Comment("Name of the ROOT file containing the flat tree data")};
     fhicl::Sequence< fhicl::Table<ObservableConfig> > observables{fhicl::Name("observables"), fhicl::Comment("List of observables")};
     fhicl::Sequence< fhicl::Table<ComponentConfig> > components{fhicl::Name("components"), fhicl::Comment("List of components")};
     fhicl::Sequence< fhicl::Table<CutConfig> > cuts{fhicl::Name("cuts"), fhicl::Comment("List of cuts to apply")};
@@ -112,7 +113,7 @@ namespace roofitter {
         std::string branchleaf;
         Float_t var;
         TLeaf *leaf;
-        TFile *file = new TFile("trkana_flat.root", "RECREATE");
+        TFile *file_flat = new TFile(_anaConf.flat_tree_filename().c_str(), "RECREATE");
         TTree *tree_flat = new TTree("trkana_flat", "flatten trkana tree");
 
         auto& obs_conf = _observables[0].getConf();
@@ -193,7 +194,7 @@ namespace roofitter {
         }
 */
         tree_flat->Write();
-        file->Write();
+        file_flat->Write();
 
         return tree_flat;
     }
@@ -244,7 +245,7 @@ namespace roofitter {
     }
     else if (_anaConf.fit_type() == "unbinned")
     {
-        TFile *file_flat = new TFile("trkana_flat.root");
+        TFile *file_flat = new TFile(_anaConf.flat_tree_filename().c_str());
         TTree *flat_tree = (TTree*) file_flat->Get("trkana_flat");
         RooRealVar *mom = new RooRealVar("mom", "mom", 95, 115);
 
