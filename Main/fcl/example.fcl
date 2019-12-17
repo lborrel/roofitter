@@ -15,8 +15,8 @@ analyses : [ @local::cemDio_mom ]
 
 // Can define input and output files here or with command line arguments
 input : {
-    filename : "/mu2e/data/users/lborrel/roofitter/trkana7.root"
-    treename : "TrkAnaNeg/trkana"
+    filename : ""
+    treename : ""
 }
 
 output : {

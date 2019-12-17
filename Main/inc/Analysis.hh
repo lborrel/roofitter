@@ -248,9 +248,12 @@ namespace roofitter {
         TTree *flat_tree = (TTree*) file_flat->Get("trkana_flat");
         RooRealVar *mom = new RooRealVar("mom", "mom", 95, 115);
 
-//        TTreeFormula *cut_formula = new TTreeFormula("cut", cutcmd(), tree);
         RooDataSet data("data", "unbinned dataset", flat_tree, *mom);
         _ws->import(data);
+    }
+    else
+    {
+        throw cet::exception("Analysis::fillData()") << "incorrect fit_type. Only \"binned\" and \"unbinned\" are currently supported";
     }
 }
 
