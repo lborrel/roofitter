@@ -1,0 +1,26 @@
+///////////////////////////////////
+// An example analysis fcl file which fits
+// the time spectrum for CeM and DIO components.
+// It includes efficiency and response functions
+
+#include "Main/fcl/obs_t0.fcl"
+#include "Main/fcl/comp_cem.fcl"
+#include "Main/fcl/comp_dio.fcl"
+
+#include "Main/fcl/cuts_cd3.fcl"
+
+BEGIN_PROLOG
+cemDio_t0 : {
+    name : "cemDio_t0"
+    fit_type : "unbinned"
+    flat_tree_filename : "trkana_flat.root"
+    observables : [ @local::t0 ]
+    components : [ @local::cemLL, @local::dioPol58 ]
+    cuts : @local::AllCD3Cuts
+    model : {
+	name: "model"
+	formula : "SUM::model(NCe[0, 200]*cemLLt0, NDio[0,20000]*dioPol58t0)"
+    }
+}
+
+END_PROLOG

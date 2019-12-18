@@ -5,9 +5,28 @@ BEGIN_PROLOG
 
 // Efficiency models
 // (none)
+//erf_tq08_t0 : {
+//   name : "erf_tq08_t0"
+//   formula : {
+//   formula : "(TMath::Erf((mom-thresh)*slope)+1)*0.5*maxEff"
+//   parameters : [ { name : "thresh" value : 91.7 },
+//                  { name : "slope" value : 0.091},
+//                  { name : "maxEff" value : 0.154}]
+//   }
+//}
 
 // Response models
 // (none)
+//dscb_tq08_t0 : {
+//   name : "dscb_tq08_t0"
+//   pdf : {
+//   name : "dscb_tq08_t0"
+//   formula : "RooDSCB::dscb_tq08_t0(t0, dscb_mean[-5.79828e-01], dscb_sigma[2.67104e-01], dscb_ANeg[4.21956e-01], dscb_PNeg[2.51002e+01], dscb_APos[2.22666e+00], dscb_PPos[5.95360e+00])"
+//   }
+//   validMin : -3
+//   validMax: 4
+//}
+
 
 // Observable definition
 t0 : {
@@ -16,13 +35,15 @@ t0 : {
 
    min : 400
    max : 1800
-   bin_width : 100
+   binWidth : 100
 
    fitMin : 700
    fitMax : 1700
 
-   efficiencyModel : @nil
-   responseModel : @nil
+//   efficiencyModel : @nil
+//   responseModel : @nil
+//   efficiencyModel : @local::erf_tq08_t0
+//   responseModel : @local::dscb_tq08_t0
 }
 
 END_PROLOG

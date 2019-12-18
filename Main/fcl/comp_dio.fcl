@@ -26,6 +26,8 @@ dioPol58 : {
 			name : "dioPol58t0"
 			formula : "Exponential::dioPol58t0(t0, muLife[-0.001157])"
 		    }
+            incEffModel : false
+            incRespModel : false
 		}
 		]
 }

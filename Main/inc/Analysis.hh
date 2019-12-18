@@ -247,9 +247,8 @@ namespace roofitter {
     {
         TFile *file_flat = new TFile(_anaConf.flat_tree_filename().c_str());
         TTree *flat_tree = (TTree*) file_flat->Get("trkana_flat");
-        RooRealVar *mom = new RooRealVar("mom", "mom", 95, 115);
 
-        RooDataSet data("data", "unbinned dataset", flat_tree, *mom);
+        RooDataSet data("data", "unbinned dataset", flat_tree, vars);
         _ws->import(data);
     }
     else
