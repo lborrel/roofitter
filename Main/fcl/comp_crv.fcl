@@ -26,6 +26,8 @@ crvFlat : {
 			name : "crvFlatt0"
 			formula : "Polynomial::crvFlatt0(t0)"
 		    }
+            incEffModel : false
+            incRespModel : false
 		}
 		]
 }
