@@ -33,11 +33,11 @@ t0 : {
    name : "t0"
    leaf : @local::t0_leaf
 
-   min : 400
+   min : 500
    max : 1800
    binWidth : 100
 
-   fitMin : 700
+   fitMin : 500
    fitMax : 1700
 
 //   efficiencyModel : @nil

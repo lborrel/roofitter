@@ -1,0 +1,28 @@
+///////////////////////////////////
+// An example analysis fcl file which fits
+// the time spectrum for CeM, DIO, cosmic ray and Radiative Pion Capture (RPC) components.
+// It includes efficiency and response functions
+
+#include "Main/fcl/obs_t0.fcl"
+#include "Main/fcl/comp_cem.fcl"
+#include "Main/fcl/comp_dio.fcl"
+#include "Main/fcl/comp_crv.fcl"
+#include "Main/fcl/comp_RPC.fcl"
+
+#include "Main/fcl/cuts_cd3.fcl"
+
+BEGIN_PROLOG
+cemDioCrvRpc_t0 : {
+    name : "cemDioCrvRpc_t0"
+    fit_type : "unbinned"
+    flat_tree_filename : "trkana_flat.root"
+    observables : [ @local::t0 ]
+    components : [ @local::cemLL, @local::dioPol58, @local::crvFlat, @local::RPC ]
+    cuts : @local::CD3CutsNoCRVRPC
+    model : {
+	name: "model"
+	formula : "SUM::model(NCe[0, 200]*cemLLt0, NDio[0,20000]*dioPol58t0, NCrv[0, 20000]*crvFlatt0, NRpc[0, 20000]*RPCt0)"
+    }
+}
+
+END_PROLOG

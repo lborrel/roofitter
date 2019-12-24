@@ -21,7 +21,16 @@ RPC : {
 		    respPdfName : "RPCmomEffResp"
 
 		    integrator : "RooMCIntegrator"
-		}
+		},
+        {
+            obsName : "t0"
+            pdf : {
+            name : "RPCt0"
+            formula : "Exponential::RPCt0(t0, pionLife[-0.000025])"
+            }
+            incEffModel : false
+            incRespModel : false
+        }
 		]
 }
 

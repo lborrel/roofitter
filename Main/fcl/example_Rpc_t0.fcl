@@ -1,0 +1,24 @@
+////////////////////////////////////
+// An example fcl file that you can run
+// on a trkana tree for time fitting
+
+// Get cut and leaf definitions for the trkana tree
+#include "Main/fcl/obs_leaves_trkana.fcl"
+#include "Main/fcl/cuts_cd3_trkana.fcl"
+
+/// This is the analysis we want to include
+#include "Main/fcl/ana_cemDioCrvRpc_t0.fcl"
+
+
+// Can do more than one analysis in a single run
+analyses : [ @local::cemDioCrvRpc_t0 ]
+
+// Can define input and output files here or with command line arguments
+input : {
+    filename : "/mu2e/data/users/lborrel/roofitter/trkana7.root"
+    treename : "TrkAnaNeg/trkana"
+}
+
+output : {
+    filename : "ana_t0.root"
+}

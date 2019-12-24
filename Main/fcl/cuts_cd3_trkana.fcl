@@ -7,6 +7,7 @@ BEGIN_PROLOG
 goodfit_leaf : "de.status>0"
 triggered_leaf : "(trigbits&0x208)>0"
 inTimeWindow_leaf : "de.t0>700 && de.t0<1695"
+inTimeWindowRPC_leaf : "de.t0>500 && de.t0<1695"
 inTanDipCut_leaf : "deent.td>0.577350 && deent.td<1.000"
 inD0Cut_leaf : "deent.d0>-80 && deent.d0<105"
 inMaxRCut_leaf : "deent.d0+2./deent.om>450 && deent.d0+2./deent.om<680"
