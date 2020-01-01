@@ -11,9 +11,10 @@
 #include "Main/fcl/cuts_cd3.fcl"
 
 BEGIN_PROLOG
-cemDio_mom_t0 : {
-    name : "cemDio_mom_t0"
-    fit_type : "binned"
+cemDio_2D : {
+    name : "cemDio_2D"
+    fit_type : "unbinned"
+    flat_tree_filename : "trkana_flat_2D.root"
     observables : [ @local::mom, @local::t0 ]
     components : [ @local::cemLL, @local::dioPol58 ]
     cuts : @local::AllCD3Cuts

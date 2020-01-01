@@ -110,7 +110,7 @@ namespace roofitter {
 
     TTree* flattenTree(TTree* tree)
     {
-        std::string branchleaf;
+/*        std::string branchleaf;
         Float_t var;
         TLeaf *leaf;
         TFile *file_flat = new TFile(_anaConf.flat_tree_filename().c_str(), "RECREATE");
@@ -146,14 +146,15 @@ namespace roofitter {
                 tree_flat->Fill();
             }
         }
+*/
 
-/*
         std::vector<std::string> branchleaf;
         std::vector<Float_t> vars(_observables.size());
         std::vector<TLeaf *> leaves;
-        TFile *file = new TFile("trkana_flat.root", "RECREATE");
+        TFile *file_flat = new TFile(_anaConf.flat_tree_filename().c_str(), "RECREATE");
         TTree *tree_flat = new TTree("trkana_flat", "flatten trkana tree");
 
+        std::cout << "# observables: " << _observables.size() << std::endl;
         for (unsigned int i_obs = 0; i_obs < _observables.size(); ++i_obs)
         {
             auto& obs_conf = _observables[i_obs].getConf();
@@ -170,14 +171,14 @@ namespace roofitter {
                 }
             }
 
-            tree_flat->Branch((branch_name+leaf_name).c_str(), &vars[i_obs], (branch_name+leaf_name+"/F").c_str());
+            std::cout << "Leaf name: " << leaf_name << std::endl;
+            tree_flat->Branch(leaf_name.c_str(), &vars[i_obs]);
             leaves.push_back(tree->GetLeaf(branchleaf[i_obs].c_str()));
         }
 
         // Formula for the cut to apply on the tree
         TTreeFormula *cut_formula = new TTreeFormula("cut", cutcmd(), tree);
 
-        std::cout << "size vars: " << vars.size() << std::endl;
         Int_t n_entries = (Int_t) tree->GetEntries();
         for (Int_t i = 0; i < n_entries; i++)
         {
@@ -186,13 +187,12 @@ namespace roofitter {
                 tree->GetEntry(i);
                 if (cut_formula->EvalInstance() == 1)
                 {
-                    std::cout << "index: " << i_obs << std::endl;
                     vars[i_obs] = leaves[i_obs]->GetValue();
                     tree_flat->Fill();
                 }
             }
         }
-*/
+
         tree_flat->Write();
         file_flat->Write();
 
