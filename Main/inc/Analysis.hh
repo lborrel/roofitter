@@ -110,44 +110,6 @@ namespace roofitter {
 
     TTree* flattenTree(TTree* tree)
     {
-/*        std::string branchleaf;
-        Float_t var;
-        TLeaf *leaf;
-        TFile *file_flat = new TFile(_anaConf.flat_tree_filename().c_str(), "RECREATE");
-        TTree *tree_flat = new TTree("trkana_flat", "flatten trkana tree");
-
-        auto& obs_conf = _observables[0].getConf();
-        branchleaf = obs_conf.leaf();
-        std::string branch_name, leaf_name;
-        // Replace the "." by a "/" in the string to create the leaf later; also extract the name of the branch and the name of the leaf
-        for (unsigned int c = 0; c < branchleaf.length(); ++c)
-        {
-            if (branchleaf[c] == '.')
-            {
-                branchleaf[c] = '/';
-                branch_name = branchleaf.substr(0, c);
-                leaf_name = branchleaf.substr(c+1, branchleaf.length());
-            }
-        }
-
-        tree_flat->Branch(leaf_name.c_str(), &var, (leaf_name+"/F").c_str());
-        leaf = tree->GetLeaf(branchleaf.c_str());
-
-        // Formula for the cut to apply on the tree
-        TTreeFormula *cut_formula = new TTreeFormula("cut", cutcmd(), tree);
-
-        Int_t n_entries = (Int_t) tree->GetEntries();
-        for (Int_t i = 0; i < n_entries; i++)
-        {
-            tree->GetEntry(i);
-            if (cut_formula->EvalInstance() == 1)
-            {
-                var = leaf->GetValue();
-                tree_flat->Fill();
-            }
-        }
-*/
-
         std::vector<std::string> branchleaf;
         std::vector<Float_t> vars(_observables.size());
         std::vector<TLeaf *> leaves;
