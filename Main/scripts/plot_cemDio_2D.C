@@ -77,7 +77,7 @@ void plot_cemDio_2D(std::string filename) {
   pad1_t0->Draw();
   pad2_t0->Draw();
   
-//  pad1_t0->SetLogy();
+  pad1_t0->SetLogy();
   pad1_t0->cd();
   plot_t0->Draw();
 /*  TLatex* latex = new TLatex();

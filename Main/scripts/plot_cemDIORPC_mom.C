@@ -15,9 +15,9 @@ void plot_cemDIORPC_mom(std::string filename) {
   RooAbsPdf* pdf = ws->pdf("model");
   pdf->plotOn(plot);
   RooHist* mom_pull = plot->pullHist();
-  pdf->plotOn(plot, RooFit::Components("cemLLmomEffRes"), RooFit::LineColor(kRed), RooFit::LineStyle(kDashed));
-  pdf->plotOn(plot, RooFit::Components("dioPol58momEffRes"), RooFit::LineColor(kBlue), RooFit::LineStyle(kDashed));
-  pdf->plotOn(plot, RooFit::Components("RPCEffRes"), RooFit::LineColor(kBlue), RooFit::LineStyle(kDashed));
+  pdf->plotOn(plot, RooFit::Components("cemLLmomEffResp"), RooFit::LineColor(kRed), RooFit::LineStyle(kDashed));
+  pdf->plotOn(plot, RooFit::Components("dioPol58momEffResp"), RooFit::LineColor(kBlue), RooFit::LineStyle(kDashed));
+  pdf->plotOn(plot, RooFit::Components("RPCmomEffResp"), RooFit::LineColor(kGreen), RooFit::LineStyle(kDashed));
 
   RooRealVar* NCe = ws->var("NCe");
   RooRealVar* NDio = ws->var("NDio");
@@ -61,7 +61,7 @@ void plot_cemDIORPC_mom(std::string filename) {
   text.str("");
   text << std::fixed << std::setprecision(1);
   text << "N RPC = " << NRPC->getVal() << " #pm " << NRPC->getError();
-  latex->SetTextColor(kBlue);
+  latex->SetTextColor(kGreen);
   latex->DrawLatexNDC(ndc_x, current_ndc_y, text.str().c_str());
   current_ndc_y += step_ndc_y;
 

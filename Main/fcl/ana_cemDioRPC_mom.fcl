@@ -13,13 +13,14 @@
 BEGIN_PROLOG
 cemDioRPC_mom : {
     name : "cemDioRPC_mom"
-    fit_type : "binned"
+    fit_type : "unbinned"
+    flat_tree_filename : "trkana_flat.root"
     observables : [ @local::mom ]
     components : [ @local::cemLL, @local::dioPol58, @local::RPC , @local::crvFlat]
     cuts :@local::CD3CutsNoCRV
     model : {
 	name: "model"
-	formula : "SUM::model(NCe[0, 200]*cemLLmomEffResp, NDio[0,200]*dioPol58momEffResp, NCrv[0,200]*crvFlatmomEffResp, NRPC[0,200]*RPCmomEffResp)"
+	formula : "SUM::model(NCe[0, 200]*cemLLmomEffResp, NDio[0,20000]*dioPol58momEffResp, NCrv[0,20000]*crvFlatmomEffResp, NRPC[0,20000]*RPCmomEffResp)"
     }
 }
 

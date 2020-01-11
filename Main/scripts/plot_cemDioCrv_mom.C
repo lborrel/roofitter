@@ -1,6 +1,6 @@
-void plot_cemDioCrv_mom_wResEff() {
+void plot_cemDioCrv_mom(std::string filename) {
 
-  std::string filename = "fcl-test7.root";
+//  std::string filename = "fcl-test7.root";
   TFile* file = new TFile(filename.c_str(), "READ");
   
   RooWorkspace* ws = (RooWorkspace*) file->Get("cemDioCrv_mom/cemDioCrv_mom");
@@ -16,9 +16,9 @@ void plot_cemDioCrv_mom_wResEff() {
   RooAbsPdf* pdf = ws->pdf("model");
   pdf->plotOn(plot);
   RooHist* mom_pull = plot->pullHist();
-  pdf->plotOn(plot, RooFit::Components("cemLLmomEffResp"), RooFit::LineColor(kRed), RooFit::LineStyle(kDashed));
-  pdf->plotOn(plot, RooFit::Components("dioPol58momEffResp"), RooFit::LineColor(kBlue), RooFit::LineStyle(kDashed));
-  pdf->plotOn(plot, RooFit::Components("crvFlatmomEffResp"), RooFit::LineColor(kMagenta), RooFit::LineStyle(kDashed));
+//  pdf->plotOn(plot, RooFit::Components("cemLLmomEffResp"), RooFit::LineColor(kRed), RooFit::LineStyle(kDashed));
+//  pdf->plotOn(plot, RooFit::Components("dioPol58momEffResp"), RooFit::LineColor(kBlue), RooFit::LineStyle(kDashed));
+//  pdf->plotOn(plot, RooFit::Components("crvFlatmomEffResp"), RooFit::LineColor(kMagenta), RooFit::LineStyle(kDashed));
 
   RooRealVar* NCe = ws->var("NCe");
   RooRealVar* NDio = ws->var("NDio");
