@@ -6,6 +6,9 @@
 #include "TF1.h"
 #include "TLeaf.h"
 #include "TTreeFormula.h"
+#include "TTreeReader.h"
+#include "TTreeReaderValue.h"
+#include "TTreeReaderArray.h"
 
 #include "RooWorkspace.h"
 #include "RooDataHist.h"
@@ -141,20 +144,26 @@ namespace roofitter {
         // Formula for the cut to apply on the tree
         TTreeFormula *cut_formula = new TTreeFormula("cut", cutcmd(), tree);
 
-        Int_t n_entries = (Int_t) tree->GetEntries();
-        for (Int_t i = 0; i < n_entries; i++)
+        TTreeReader fReader(tree);
+        TTreeReaderValue<Float_t> mom = {fReader, "deent.mom"};
+        TTreeReaderValue<Float_t> det0 = {fReader, "de.t0"};
+        TTreeReaderValue<Int_t> bestcrv = {fReader, "bestcrv"};
+        TTreeReaderArray<Float_t> timeWindowStart = {fReader, "crvinfo._timeWindowStart"};
+
+        while (fReader.Next())
         {
             for (unsigned int i_obs = 0; i_obs < _observables.size(); ++i_obs)
             {
-                tree->GetEntry(i);
                 if (cut_formula->EvalInstance() == 1)
                 {
-                    vars[i_obs] = leaves[i_obs]->GetValue();
-                    tree_flat->Fill();
+                    if ( *bestcrv < 0 || *det0 - timeWindowStart[*bestcrv] < -50 || *det0 - timeWindowStart[*bestcrv] > 150 )
+                    {
+                        vars[i_obs] = *mom;
+                        tree_flat->Fill();
+                    }
                 }
             }
         }
-
         tree_flat->Write();
         file_flat->Write();
 
