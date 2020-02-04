@@ -113,7 +113,7 @@ namespace roofitter {
 
     TTree* flattenTree(TTree* tree)
     {
-        std::vector<std::string> branchleaf;
+        std::vector<std::string> branchleaf_flat, branchleaf;
         std::vector<Float_t> vars(_observables.size());
         std::vector<TLeaf *> leaves;
         TFile *file_flat = new TFile(_anaConf.flat_tree_filename().c_str(), "RECREATE");
@@ -124,31 +124,37 @@ namespace roofitter {
         {
             auto& obs_conf = _observables[i_obs].getConf();
             branchleaf.push_back(obs_conf.leaf());
+            branchleaf_flat.push_back(obs_conf.leaf());
             std::string branch_name, leaf_name;
             // Replace the "." by a "/" in the string to create the leaf later; also extract the name of the branch and the name of the leaf
-            for (unsigned int c = 0; c < branchleaf[i_obs].length(); ++c)
+            for (unsigned int c = 0; c < branchleaf_flat[i_obs].length(); ++c)
             {
-                if (branchleaf[i_obs][c] == '.')
+                if (branchleaf_flat[i_obs][c] == '.')
                 {
-                    branchleaf[i_obs][c] = '/';
-                    branch_name = branchleaf[i_obs].substr(0, c);
-                    leaf_name = branchleaf[i_obs].substr(c+1, branchleaf[i_obs].length());
+                    branchleaf_flat[i_obs][c] = '/';
+                    branch_name = branchleaf_flat[i_obs].substr(0, c);
+                    leaf_name = branchleaf_flat[i_obs].substr(c+1, branchleaf[i_obs].length());
                 }
             }
 
             std::cout << "Leaf name: " << leaf_name << std::endl;
             tree_flat->Branch(leaf_name.c_str(), &vars[i_obs]);
-            leaves.push_back(tree->GetLeaf(branchleaf[i_obs].c_str()));
+            leaves.push_back(tree->GetLeaf(branchleaf_flat[i_obs].c_str()));
         }
 
         // Formula for the cut to apply on the tree
         TTreeFormula *cut_formula = new TTreeFormula("cut", cutcmd(), tree);
 
         TTreeReader fReader(tree);
-        TTreeReaderValue<Float_t> mom = {fReader, "deent.mom"};
+        std::vector<TTreeReaderValue<Float_t>> obs_reader;
         TTreeReaderValue<Float_t> det0 = {fReader, "de.t0"};
         TTreeReaderValue<Int_t> bestcrv = {fReader, "bestcrv"};
         TTreeReaderArray<Float_t> timeWindowStart = {fReader, "crvinfo._timeWindowStart"};
+
+        for (unsigned int i_obs = 0; i_obs < _observables.size(); ++i_obs)
+        {
+            obs_reader.push_back(TTreeReaderValue<Float_t>{fReader, branchleaf[0].c_str()});
+        }
 
         while (fReader.Next())
         {
@@ -158,7 +164,7 @@ namespace roofitter {
                 {
                     if ( *bestcrv < 0 || *det0 - timeWindowStart[*bestcrv] < -50 || *det0 - timeWindowStart[*bestcrv] > 150 )
                     {
-                        vars[i_obs] = *mom;
+                        vars[i_obs] = *obs_reader[0];
                         tree_flat->Fill();
                     }
                 }
