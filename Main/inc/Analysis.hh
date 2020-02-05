@@ -51,8 +51,9 @@ namespace roofitter {
     fhicl::Sequence< fhicl::Table<ObservableConfig> > observables{fhicl::Name("observables"), fhicl::Comment("List of observables")};
     fhicl::Sequence< fhicl::Table<ComponentConfig> > components{fhicl::Name("components"), fhicl::Comment("List of components")};
     fhicl::Sequence< fhicl::Table<CutConfig> > cuts{fhicl::Name("cuts"), fhicl::Comment("List of cuts to apply")};
+    fhicl::Atom<bool> CRV_cut{fhicl::Name("CRV_cut"), fhicl::Comment("Set to true to apply the CRV cut"), false};
     fhicl::Table<PdfConfig> model{fhicl::Name("model"), fhicl::Comment("The PDF for the full final model to fit")};
-    fhicl::Atom<bool> unfold{fhicl::Name("unfold"), fhicl::Comment("Set to tru if you want to unfold the efficiency and response effects"), false};
+    fhicl::Atom<bool> unfold{fhicl::Name("unfold"), fhicl::Comment("Set to true if you want to unfold the efficiency and response effects"), false};
     fhicl::Atom<bool> allow_failure{fhicl::Name("allow_failure"), fhicl::Comment("If set to true, then roofitter will not throw an exception for a failed fit."), false};
     fhicl::Sequence<std::string> calculations{fhicl::Name("calculations"), fhicl::Comment("A list of supplemental calculations that you want to calculate"), std::vector<std::string>()};
   };
@@ -162,12 +163,20 @@ namespace roofitter {
             {
                 if (cut_formula->EvalInstance() == 1)
                 {
-                    if ( *bestcrv < 0 || *det0 - timeWindowStart[*bestcrv] < -50 || *det0 - timeWindowStart[*bestcrv] > 150 )
+                    if (_anaConf.CRV_cut())
                     {
-                        vars[i_obs] = *obs_reader[0];
+                        if ( *bestcrv < 0 || *det0 - timeWindowStart[*bestcrv] < -50 || *det0 - timeWindowStart[*bestcrv] > 150 )
+                        {
+                            vars[i_obs] = *obs_reader[i_obs];
+                            tree_flat->Fill();
+                        }
+                    }
+                    else
+                    {
+                        vars[i_obs] = *obs_reader[i_obs];
                         tree_flat->Fill();
                     }
-                }
+            }
             }
         }
         tree_flat->Write();
