@@ -17,14 +17,14 @@ cemDioCrvRpc_t0 : {
     fit_type : "unbinned"
     flat_tree_filename : "trkana_flat.root"
     observables : [ @local::t0 ]
-    components : [ @local::cemLL, @local::dioPol58, @local::crvFlat, @local::RPC ]
-    cuts : @local::CD3CutsNoCRVRPC
+    components : [ @local::dioPol58, @local::crvFlat, @local::RPC ]
+    cuts : @local::CD3CutsNoCRVNoRPC
     CRV_cut : false
     model : {
 	name: "model"
-	formula : "SUM::model(NCe[0, 200]*cemLLt0, NDio[0,20000]*dioPol58t0, NCrv[0, 20000]*crvFlatt0, NRpc[0, 20000]*RPCt0)"
+	formula : "SUM::model(NDio[0,20000]*dioPol58t0, NCrv[0, 20000]*crvFlatt0, NRpc[0, 20000]*RPCt0)"
     }
-    allow_failure : true
+    allow_failure : false
 }
 
 END_PROLOG

@@ -13,15 +13,15 @@ void plot_cemDio_t0(std::string filename) {
   data->plotOn(plot);
   
   RooAbsPdf* pdf = ws->pdf("model");
-  pdf->plotOn(plot);
+  pdf->plotOn(plot, RooFit::LineColor(kBlack));
   RooHist* t0_pull = plot->pullHist();
-  pdf->plotOn(plot, RooFit::Components("cemLLt0"), RooFit::LineColor(kRed), RooFit::LineStyle(kDashed));
+//  pdf->plotOn(plot, RooFit::Components("cemLLt0"), RooFit::LineColor(kRed), RooFit::LineStyle(kDashed));
   pdf->plotOn(plot, RooFit::Components("dioPol58t0"), RooFit::LineColor(kBlue), RooFit::LineStyle(kDashed));
 
-  RooRealVar* NCe = ws->var("NCe");
+//  RooRealVar* NCe = ws->var("NCe");
   RooRealVar* NDio = ws->var("NDio");
-  std::cout << "NCe = " << NCe->getValV() << " +/- " << NCe->getError() << std::endl;
-  std::cout << "NDio = " << NDio->getValV() << " +/- " << NDio->getError() << std::endl;
+//  std::cout << "NCe = " << NCe->getValV() << " +/- " << NCe->getError() << std::endl;
+  std::cout << "NCe + NDio = " << NDio->getValV() << " +/- " << NDio->getError() << std::endl;
 
   TCanvas* c = new TCanvas();
   TPad* pad1 = new TPad("", "", 0.0, 0.4, 1.0, 1.0);
@@ -40,16 +40,16 @@ void plot_cemDio_t0(std::string filename) {
   double first_ndc_y = 0.6;
   double step_ndc_y = -0.05;
   double current_ndc_y = first_ndc_y;
-  text.str("");
-  text << std::fixed << std::setprecision(1);
-  text << "N Ce = " << NCe->getVal() << " #pm " << NCe->getError();
-  latex->SetTextColor(kRed);
-  latex->DrawLatexNDC(ndc_x, current_ndc_y, text.str().c_str());
-  current_ndc_y += step_ndc_y;
+//  text.str("");
+//  text << std::fixed << std::setprecision(1);
+//  text << "N Ce = " << NCe->getVal() << " #pm " << NCe->getError();
+//  latex->SetTextColor(kRed);
+//  latex->DrawLatexNDC(ndc_x, current_ndc_y, text.str().c_str());
+//  current_ndc_y += step_ndc_y;
   
   text.str("");
   text << std::fixed << std::setprecision(1);
-  text << "N Dio = " << NDio->getVal() << " #pm " << NDio->getError();
+  text << "N Ce + Dio = " << NDio->getVal() << " #pm " << NDio->getError();
   latex->SetTextColor(kBlue);
   latex->DrawLatexNDC(ndc_x, current_ndc_y, text.str().c_str());
   current_ndc_y += step_ndc_y;

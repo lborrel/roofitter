@@ -1,8 +1,8 @@
-void plot_cemDioCrv_t0(std::string filename) {
+void plot_cemDioRpc_t0(std::string filename) {
 
   TFile* file = new TFile(filename.c_str(), "READ");
   
-  RooWorkspace* ws = (RooWorkspace*) file->Get("cemDioCrv_t0/cemDioCrv_t0");
+  RooWorkspace* ws = (RooWorkspace*) file->Get("cemDioRpc_t0/cemDioRpc_t0");
 
   ws->Print();
 
@@ -17,14 +17,14 @@ void plot_cemDioCrv_t0(std::string filename) {
   RooHist* t0_pull = plot->pullHist();
 //  pdf->plotOn(plot, RooFit::Components("cemLLt0"), RooFit::LineColor(kRed), RooFit::LineStyle(kDashed));
   pdf->plotOn(plot, RooFit::Components("dioPol58t0"), RooFit::LineColor(kBlue), RooFit::LineStyle(kDashed));
-  pdf->plotOn(plot, RooFit::Components("crvFlatt0"), RooFit::LineColor(kMagenta), RooFit::LineStyle(kDashed));
+  pdf->plotOn(plot, RooFit::Components("RPCt0"), RooFit::LineColor(kGreen), RooFit::LineStyle(kDashed));
 
 //  RooRealVar* NCe = ws->var("NCe");
   RooRealVar* NDio = ws->var("NDio");
-  RooRealVar* NCrv = ws->var("NCrv");
+  RooRealVar* NRpc = ws->var("NRpc");
 //  std::cout << "NCe = " << NCe->getValV() << " +/- " << NCe->getError() << std::endl;
   std::cout << "NCe + NDio = " << NDio->getValV() << " +/- " << NDio->getError() << std::endl;
-  std::cout << "NCrv = " << NCrv->getValV() << " +/- " << NCrv->getError() << std::endl;
+  std::cout << "NRpc = " << NRpc->getValV() << " +/- " << NRpc->getError() << std::endl;
 
   TCanvas* c = new TCanvas();
   TPad* pad1 = new TPad("", "", 0.0, 0.4, 1.0, 1.0);
@@ -59,8 +59,8 @@ void plot_cemDioCrv_t0(std::string filename) {
 
   text.str("");
   text << std::fixed << std::setprecision(1);
-  text << "N Crv = " << NCrv->getVal() << " #pm " << NCrv->getError();
-  latex->SetTextColor(kMagenta);
+  text << "N Rpc = " << NRpc->getVal() << " #pm " << NRpc->getError();
+  latex->SetTextColor(kGreen);
   latex->DrawLatexNDC(ndc_x, current_ndc_y, text.str().c_str());
   current_ndc_y += step_ndc_y;
 

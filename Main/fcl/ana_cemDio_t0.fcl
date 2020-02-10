@@ -16,11 +16,11 @@ cemDio_t0 : {
     flat_tree_filename : "trkana_flat.root"
     observables : [ @local::t0 ]
     components : [ @local::cemLL, @local::dioPol58 ]
-    cuts : @local::CD3CutsNoCRVRPC
-    CRV_cut : false
+    cuts : @local::CD3CutsNoCRV
+    CRV_cut : true
     model : {
 	name: "model"
-	formula : "SUM::model(NCe[0, 200]*cemLLt0, NDio[0,20000]*dioPol58t0)"
+	formula : "SUM::model(0*cemLLt0, NDio[0,20000]*dioPol58t0)"
     }
 }
 
