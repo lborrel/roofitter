@@ -1,8 +1,8 @@
-void plot_cemDioRPC_mom(std::string filename) {
+void plot_cemDioRpc_mom(std::string filename) {
 
   TFile* file = new TFile(filename.c_str(), "READ");
   
-  RooWorkspace* ws = (RooWorkspace*) file->Get("cemDioRPC_mom/cemDioRPC_mom");
+  RooWorkspace* ws = (RooWorkspace*) file->Get("cemDioRpc_mom/cemDioRpc_mom");
 
   ws->Print();
 
@@ -13,11 +13,11 @@ void plot_cemDioRPC_mom(std::string filename) {
   data->plotOn(plot);
   
   RooAbsPdf* pdf = ws->pdf("model");
-  pdf->plotOn(plot);
+  pdf->plotOn(plot, RooFit::LineColor(kBlack));
   RooHist* mom_pull = plot->pullHist();
-  pdf->plotOn(plot, RooFit::Components("cemLLmomEffRes"), RooFit::LineColor(kRed), RooFit::LineStyle(kDashed));
-  pdf->plotOn(plot, RooFit::Components("dioPol58momEffRes"), RooFit::LineColor(kBlue), RooFit::LineStyle(kDashed));
-  pdf->plotOn(plot, RooFit::Components("RPCEffRes"), RooFit::LineColor(kGreen), RooFit::LineStyle(kDashed));
+  pdf->plotOn(plot, RooFit::Components("cemLLmomEffResp"), RooFit::LineColor(kRed), RooFit::LineStyle(kDashed));
+  pdf->plotOn(plot, RooFit::Components("dioPol58momEffResp"), RooFit::LineColor(kBlue), RooFit::LineStyle(kDashed));
+  pdf->plotOn(plot, RooFit::Components("RPCmomEffResp"), RooFit::LineColor(kGreen), RooFit::LineStyle(kDashed));
 
   RooRealVar* NCe = ws->var("NCe");
   RooRealVar* NDio = ws->var("NDio");

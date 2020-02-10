@@ -13,7 +13,7 @@ void plot_cemDio_mom(std::string filename) {
   data->plotOn(plot);
   
   RooAbsPdf* pdf = ws->pdf("model");
-  pdf->plotOn(plot);
+  pdf->plotOn(plot, RooFit::LineColor(kBlack));
   RooHist* mom_pull = plot->pullHist();
   pdf->plotOn(plot, RooFit::Components("cemLLmomEffResp"), RooFit::LineColor(kRed), RooFit::LineStyle(kDashed));
   pdf->plotOn(plot, RooFit::Components("dioPol58momEffResp"), RooFit::LineColor(kBlue), RooFit::LineStyle(kDashed));

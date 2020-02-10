@@ -7,11 +7,11 @@
 #include "Main/fcl/cuts_cd3_trkana.fcl"
 
 /// This is the analysis we want to include
-#include "Main/fcl/ana_cemDioRPC_mom.fcl"
+#include "Main/fcl/ana_cemDioRpc_mom.fcl"
 
 
 // Can do more than one analysis in a single run
-analyses : [ @local::cemDioRPC_mom ]
+analyses : [ @local::cemDioRpc_mom ]
 
 // Can define input and output files here or with command line arguments
 input : {

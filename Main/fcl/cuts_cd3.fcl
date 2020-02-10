@@ -27,6 +27,6 @@ recomom : { name : "recomom" leaf : @local::recomom_leaf  }
 
 CD3CutsNoCRV : [ @local::goodfit, @local::triggered, @local::inTimeWindow, @local::inTanDipCut, @local::inD0Cut, @local::inMaxRCut, @local::passTrkQual, @local::passTrkPID, @local::noUpstream, @local::recomom ]
 
-CD3CutsNoCRVRPC : [ @local::goodfit, @local::triggered, @local::inTimeWindowRPC, @local::inTanDipCut, @local::inD0Cut, @local::inMaxRCut, @local::passTrkQual, @local::passTrkPID, @local::noUpstream, @local::recomom ]
+CD3CutsNoCRVNoRPC : [ @local::goodfit, @local::triggered, @local::inTimeWindowRPC, @local::inTanDipCut, @local::inD0Cut, @local::inMaxRCut, @local::passTrkQual, @local::passTrkPID, @local::noUpstream, @local::recomom ]
 
 END_PROLOG
