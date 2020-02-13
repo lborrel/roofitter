@@ -1,8 +1,8 @@
-void plot_cemDio_2D(std::string filename) {
+void plot_cemDioCrv_2D(std::string filename) {
 
   TFile* file = new TFile(filename.c_str(), "READ");
   
-  RooWorkspace* ws = (RooWorkspace*) file->Get("cemDio_2D/cemDio_2D");
+  RooWorkspace* ws = (RooWorkspace*) file->Get("cemDioCrv_2D/cemDioCrv_2D");
 
   ws->Print();
 
@@ -26,13 +26,17 @@ void plot_cemDio_2D(std::string filename) {
   RooHist* t0_pull = plot_t0->pullHist();
   pdf->plotOn(plot_mom, RooFit::Components("cemLLmomEffResp"), RooFit::LineColor(kRed), RooFit::LineStyle(kDashed));
   pdf->plotOn(plot_mom, RooFit::Components("dioPol58momEffResp"), RooFit::LineColor(kBlue), RooFit::LineStyle(kDashed));
+  pdf->plotOn(plot_mom, RooFit::Components("crvFlatmomEffResp"), RooFit::LineColor(kMagenta), RooFit::LineStyle(kDashed));
   pdf->plotOn(plot_t0, RooFit::Components("cemLLt0"), RooFit::LineColor(kRed), RooFit::LineStyle(kDashed));
   pdf->plotOn(plot_t0, RooFit::Components("dioPol58t0"), RooFit::LineColor(kBlue), RooFit::LineStyle(kDashed));
+  pdf->plotOn(plot_t0, RooFit::Components("crvFlatt0"), RooFit::LineColor(kMagenta), RooFit::LineStyle(kDashed));
 
   RooRealVar* NCe = ws->var("NCe");
   RooRealVar* NDio = ws->var("NDio");
+  RooRealVar* NCrv = ws->var("NCrv");
   std::cout << "NCe = " << NCe->getValV() << " +/- " << NCe->getError() << std::endl;
   std::cout << "NDio = " << NDio->getValV() << " +/- " << NDio->getError() << std::endl;
+  std::cout << "NCrv = " << NCrv->getValV() << " +/- " << NCrv->getError() << std::endl;
 
   TCanvas* c_mom = new TCanvas();
   TPad* pad1_mom = new TPad("", "", 0.0, 0.4, 1.0, 1.0);
@@ -62,6 +66,13 @@ void plot_cemDio_2D(std::string filename) {
   text << std::fixed << std::setprecision(1);
   text << "N Dio = " << NDio->getVal() << " #pm " << NDio->getError();
   latex->SetTextColor(kBlue);
+  latex->DrawLatexNDC(ndc_x, current_ndc_y, text.str().c_str());
+  current_ndc_y += step_ndc_y;
+
+  text.str("");
+  text << std::fixed << std::setprecision(1);
+  text << "N Crv = " << NCrv->getVal() << " #pm " << NCrv->getError();
+  latex->SetTextColor(kMagenta);
   latex->DrawLatexNDC(ndc_x, current_ndc_y, text.str().c_str());
   current_ndc_y += step_ndc_y;
 
@@ -96,6 +107,13 @@ void plot_cemDio_2D(std::string filename) {
   text << std::fixed << std::setprecision(1);
   text << "N Dio = " << NDio->getVal() << " #pm " << NDio->getError();
   latex->SetTextColor(kBlue);
+  latex->DrawLatexNDC(ndc_x, current_ndc_y, text.str().c_str());
+  current_ndc_y += step_ndc_y;
+
+  text.str("");
+  text << std::fixed << std::setprecision(1);
+  text << "N Crv = " << NCrv->getVal() << " #pm " << NCrv->getError();
+  latex->SetTextColor(kMagenta);
   latex->DrawLatexNDC(ndc_x, current_ndc_y, text.str().c_str());
   current_ndc_y += step_ndc_y;
 

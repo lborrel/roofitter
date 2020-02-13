@@ -7,21 +7,22 @@
 #include "Main/fcl/obs_t0.fcl"
 #include "Main/fcl/comp_cem.fcl"
 #include "Main/fcl/comp_dio.fcl"
+#include "Main/fcl/comp_RPC.fcl"
 
 #include "Main/fcl/cuts_cd3.fcl"
 
 BEGIN_PROLOG
-cemDio_2D : {
-    name : "cemDio_2D"
+cemDioRpc_2D : {
+    name : "cemDioRpc_2D"
     fit_type : "unbinned"
     flat_tree_filename : "trkana_flat_2D.root"
     observables : [ @local::mom, @local::t0 ]
-    components : [ @local::cemLL, @local::dioPol58 ]
-    cuts : @local::CD3CutsNoCRV
+    components : [ @local::cemLL, @local::dioPol58, @local::RPC ]
+    cuts : @local::CD3CutsNoCRVNoRPC
     CRV_cut : true
     model : {
 	name: "model"
-	formula : "SUM::model(NCe[0, 200]*RooProdPdf::cemProdPdf(cemLLmomEffResp, cemLLt0), NDio[0,20000]*RooProdPdf::dioProdPdf(dioPol58momEffResp, dioPol58t0))"
+	formula : "SUM::model(NCe[0, 200]*RooProdPdf::cemProdPdf(cemLLmomEffResp, cemLLt0), NDio[0,20000]*RooProdPdf::dioProdPdf(dioPol58momEffResp, dioPol58t0), NRpc[0,20000]*RooProdPdf::rpcProdPdf(RPCmomEffResp, RPCt0))"
     }
 }
 
