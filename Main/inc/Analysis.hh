@@ -154,29 +154,32 @@ namespace roofitter {
 
         for (unsigned int i_obs = 0; i_obs < _observables.size(); ++i_obs)
         {
-            obs_reader.push_back(TTreeReaderValue<Float_t>{fReader, branchleaf[0].c_str()});
+            obs_reader.push_back(TTreeReaderValue<Float_t>{fReader, branchleaf[i_obs].c_str()});
         }
 
         while (fReader.Next())
         {
-            for (unsigned int i_obs = 0; i_obs < _observables.size(); ++i_obs)
+            if (cut_formula->EvalInstance() == 1)
             {
-                if (cut_formula->EvalInstance() == 1)
+                if (_anaConf.CRV_cut())
                 {
-                    if (_anaConf.CRV_cut())
+                    if ( *bestcrv < 0 || *det0 - timeWindowStart[*bestcrv] < -50 || *det0 - timeWindowStart[*bestcrv] > 150 )
                     {
-                        if ( *bestcrv < 0 || *det0 - timeWindowStart[*bestcrv] < -50 || *det0 - timeWindowStart[*bestcrv] > 150 )
+                        for (unsigned int i_obs = 0; i_obs < _observables.size(); ++i_obs)
                         {
                             vars[i_obs] = *obs_reader[i_obs];
-                            tree_flat->Fill();
                         }
-                    }
-                    else
-                    {
-                        vars[i_obs] = *obs_reader[i_obs];
                         tree_flat->Fill();
                     }
-            }
+                }
+                else
+                {
+                    for (unsigned int i_obs = 0; i_obs < _observables.size(); ++i_obs)
+                    {
+                        vars[i_obs] = *obs_reader[i_obs];
+                    }
+                    tree_flat->Fill();
+                }
             }
         }
         tree_flat->Write();
